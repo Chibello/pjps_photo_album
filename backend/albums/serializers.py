@@ -1,0 +1,235 @@
+from rest_framework import serializers
+from .models import AcademicYear, YearLevel, Diocese, State, Student, Photo
+
+
+# ============================
+# ACADEMIC YEAR
+# ============================
+
+class AcademicYearSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AcademicYear
+        fields = '__all__'
+
+
+# ============================
+# YEAR LEVEL
+# ============================
+
+class YearLevelSerializer(serializers.ModelSerializer):
+    student_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = YearLevel
+        fields = ['id', 'name', 'display_order', 'is_active', 'student_count']
+
+    def get_student_count(self, obj):
+        # ✅ FIXED: Count students ONLY in this year level
+        return Student.objects.filter(
+            year_level=obj,
+            is_active=True
+        ).count()
+
+
+# ============================
+# DIOCESE & STATE
+# ============================
+
+class DioceseSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Diocese
+        fields = '__all__'
+
+
+class StateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = State
+        fields = '__all__'
+
+
+# ============================
+# PHOTO SERIALIZER
+# ============================
+
+class PhotoSerializer(serializers.ModelSerializer):
+    thumbnail_url = serializers.SerializerMethodField()
+    medium_url = serializers.SerializerMethodField()
+    full_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Photo
+        fields = ['id', 'title', 'thumbnail_url', 'medium_url', 'full_url', 'uploaded_at']
+
+    def _build_url(self, request, field):
+        if field:
+            return request.build_absolute_uri(field.url)
+        return None
+
+    def get_thumbnail_url(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.thumbnail)
+
+    def get_medium_url(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.medium)
+
+    def get_full_url(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.image)
+
+
+# ============================
+# STUDENT LIST (LIGHTWEIGHT)
+# ============================
+
+class StudentListSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(read_only=True)
+    profile_photo_thumbnail = serializers.SerializerMethodField()
+
+    year_level = serializers.UUIDField(source='year_level.id', read_only=True)
+    year_level_name = serializers.CharField(source='year_level.name', read_only=True)
+
+    class Meta:
+        model = Student
+        fields = [
+            'id',
+            'registration_number',
+            'full_name',
+            'profile_photo_thumbnail',
+            'year_level',
+            'year_level_name',
+            'is_active',
+            'is_graduated'
+        ]
+
+    def get_profile_photo_thumbnail(self, obj):
+        request = self.context.get('request')
+        if obj.profile_photo_thumbnail:
+            return request.build_absolute_uri(obj.profile_photo_thumbnail.url)
+        return None
+
+
+# ============================
+# STUDENT DETAIL (FULL DATA)
+# ============================
+'''
+class StudentDetailSerializer(serializers.ModelSerializer):
+    full_name = serializers.CharField(read_only=True)
+
+    profile_photo_small = serializers.SerializerMethodField()
+    profile_photo_medium = serializers.SerializerMethodField()
+    profile_photo_original = serializers.SerializerMethodField()
+
+    diocese_name = serializers.CharField(source='diocese.name', read_only=True)
+    state_name = serializers.CharField(source='state_of_origin.name', read_only=True)
+    year_level_name = serializers.CharField(source='year_level.name', read_only=True)
+    additional_photos = PhotoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Student
+        fields = [
+            'id',
+            'registration_number',
+            'first_name',
+            'last_name',
+            'other_names',
+            'full_name',
+            'date_of_birth',
+            'diocese',
+            'diocese_name',
+            'hometown',
+            'state_of_origin',
+            'state_name',
+            'year_level',
+            'year_level_name',
+            'enrollment_date',
+            'profile_photo_small',
+            'profile_photo_medium',
+            'profile_photo_original',
+            'additional_photos',
+            'is_graduated',
+            'is_active',
+            'personal_notes',
+            'created_at',
+            'updated_at'
+        ]
+
+    def _build_url(self, request, field):
+        if field:
+            return request.build_absolute_uri(field.url)
+        return None
+
+    def get_profile_photo_small(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.profile_photo_small)
+
+    def get_profile_photo_medium(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.profile_photo_medium)
+
+    def get_profile_photo_original(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.profile_photo)
+    '''
+#======================================
+class StudentDetailSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()  # ✅ compute full_name
+
+    profile_photo_small = serializers.SerializerMethodField()
+    profile_photo_medium = serializers.SerializerMethodField()
+    profile_photo_original = serializers.SerializerMethodField()
+
+    diocese_name = serializers.CharField(source='diocese.name', read_only=True)
+    state_name = serializers.CharField(source='state_of_origin.name', read_only=True)
+    year_level_name = serializers.CharField(source='year_level.name', read_only=True)
+    additional_photos = PhotoSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Student
+        fields = [
+            'id',
+            'registration_number',
+            'first_name',
+            'last_name',
+            'other_names',
+            'full_name',
+            'date_of_birth',
+            'diocese',
+            'diocese_name',
+            'hometown',
+            'state_of_origin',
+            'state_name',
+            'year_level',
+            'year_level_name',
+            'enrollment_date',
+            'profile_photo_small',
+            'profile_photo_medium',
+            'profile_photo_original',
+            'additional_photos',
+            'is_graduated',
+            'is_active',
+            'personal_notes',
+            'created_at',
+            'updated_at'
+        ]
+
+    def _build_url(self, request, field):
+        if field:
+            return request.build_absolute_uri(field.url)
+        return None
+
+    # ✅ Compute full_name
+    def get_full_name(self, obj):
+        return obj.full_name
+
+    def get_profile_photo_small(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.profile_photo_small)
+
+    def get_profile_photo_medium(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.profile_photo_medium)
+
+    def get_profile_photo_original(self, obj):
+        request = self.context.get('request')
+        return self._build_url(request, obj.profile_photo)

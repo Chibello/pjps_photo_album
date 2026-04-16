@@ -1,0 +1,384 @@
+{% extends 'admin/base_site.html' %} {% load static %} {% block extrastyle %} {{
+block.super }}
+<link rel="stylesheet" href="{% static 'css/registration.css' %}" />
+{% endblock %} {% block content %}
+
+<!-- Quick mode switcher -->
+<div
+  class="filters"
+  style="background: linear-gradient(135deg, #f8f9fa, #e9ecef)"
+>
+  <div style="flex: 2">
+    <label>Quick Actions:</label>
+    <div style="display: flex; gap: 10px; margin-top: 5px">
+      <button onclick="setMode('MANUAL')" class="action-btn view">
+        <i class="fas fa-user-check"></i> Switch to Manual
+      </button>
+      <button onclick="setMode('AUTOMATIC')" class="action-btn approve">
+        <i class="fas fa-bolt"></i> Switch to Auto
+      </button>
+      <button onclick="setMode('HYBRID')" class="action-btn view">
+        <i class="fas fa-sliders-h"></i> Hybrid Mode
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Add at top of dashboard -->
+<div
+  style="
+    margin-bottom: 20px;
+    padding: 15px;
+    background: white;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  "
+>
+  <div>
+    <strong>Current Approval Mode:</strong>
+    <span
+      class="badge {% if current_mode == 'Automatic' %}approved{% elif current_mode == 'Manual' %}pending{% else %}info{% endif %}"
+    >
+      {{ current_mode }}
+    </span>
+  </div>
+  <a
+    href="{% url 'admin:registration_approvalsettings_change' 1 %}"
+    class="action-btn view"
+  >
+    <i class="fas fa-cog"></i> Change Settings
+  </a>
+</div>
+
+<div class="admin-container">
+  <h1>Registration Approvals Dashboard</h1>
+
+  <!-- Add auto-approve column to table -->
+  <th>Auto?</th>
+  <!-- ... in table body ... -->
+  <td>
+    {% if submission.auto_approved %}
+    <span class="badge approved"><i class="fas fa-check"></i> Auto</span>
+    {% else %}
+    <span class="badge pending"><i class="fas fa-clock"></i> Manual</span>
+    {% endif %}
+  </td>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <div class="stat-info">
+        <h4>Pending Students</h4>
+        <div class="stat-number">{{ pending_students }}</div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-user-graduate"></i>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-info">
+        <h4>Pending Staff</h4>
+        <div class="stat-number">{{ pending_staff }}</div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-chalkboard-teacher"></i>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-info">
+        <h4>Approved Today</h4>
+        <div class="stat-number">{{ approved_today }}</div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-check-circle"></i>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <div class="stat-info">
+        <h4>Total Registered</h4>
+        <div class="stat-number">{{ total_registered }}</div>
+      </div>
+      <div class="stat-icon">
+        <i class="fas fa-users"></i>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <div class="filter-group">
+      <label>Status:</label>
+      <select
+        id="status-filter"
+        class="form-control"
+        onchange="filterSubmissions()"
+      >
+        <option value="">All Status</option>
+        <option
+          value="PENDING"
+          {%
+          if
+          status_filter=""
+          ="PENDING"
+          %}selected{%
+          endif
+          %}
+        >
+          Pending
+        </option>
+        <option
+          value="APPROVED"
+          {%
+          if
+          status_filter=""
+          ="APPROVED"
+          %}selected{%
+          endif
+          %}
+        >
+          Approved
+        </option>
+        <option
+          value="REJECTED"
+          {%
+          if
+          status_filter=""
+          ="REJECTED"
+          %}selected{%
+          endif
+          %}
+        >
+          Rejected
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Type:</label>
+      <select
+        id="type-filter"
+        class="form-control"
+        onchange="filterSubmissions()"
+      >
+        <option value="">All Types</option>
+        <option
+          value="STUDENT"
+          {%
+          if
+          type_filter=""
+          ="STUDENT"
+          %}selected{%
+          endif
+          %}
+        >
+          Students
+        </option>
+        <option
+          value="STAFF"
+          {%
+          if
+          type_filter=""
+          ="STAFF"
+          %}selected{%
+          endif
+          %}
+        >
+          Staff
+        </option>
+      </select>
+    </div>
+
+    <div class="filter-group">
+      <label>Search:</label>
+      <input
+        type="text"
+        id="search-filter"
+        class="form-control"
+        placeholder="Name or Registration #"
+        value="{{ search_query }}"
+        onkeyup="debounceSearch()"
+      />
+    </div>
+  </div>
+
+  <!-- Submissions Table -->
+  <div class="submissions-table">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Registration #</th>
+          <th>Type</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for submission in submissions %}
+        <tr>
+          <td>{{ submission.submitted_at|date:"Y-m-d H:i" }}</td>
+          <td>{{ submission.full_name }}</td>
+          <td>{{ submission.registration_number }}</td>
+          <td>{{ submission.user_type }}</td>
+          <td>
+            <span class="badge {{ submission.status|lower }}">
+              {{ submission.get_status_display }}
+            </span>
+          </td>
+          <td>
+            <a
+              href="{% url 'registration:review_submission' submission.id %}"
+              class="action-btn view"
+            >
+              <i class="fas fa-eye"></i> Review
+            </a>
+
+            {% if submission.status == 'PENDING' %}
+            <button
+              onclick="approveSubmission('{{ submission.id }}', '{{ submission.user_type }}')"
+              class="action-btn approve"
+            >
+              <i class="fas fa-check"></i> Approve
+            </button>
+
+            <button
+              onclick="rejectSubmission('{{ submission.id }}', '{{ submission.user_type }}')"
+              class="action-btn reject"
+            >
+              <i class="fas fa-times"></i> Reject
+            </button>
+
+            <!-- Hidden forms for actions -->
+            <form
+              id="approve-form-{{ submission.id }}"
+              action="{% url 'registration:approve_submission' submission.id %}"
+              method="post"
+              style="display: none"
+            >
+              {% csrf_token %}
+            </form>
+
+            <form
+              id="reject-form-{{ submission.id }}"
+              action="{% url 'registration:reject_submission' submission.id %}"
+              method="post"
+              style="display: none"
+            >
+              {% csrf_token %}
+              <input
+                type="hidden"
+                id="reject-reason-{{ submission.id }}"
+                name="reason"
+              />
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" style="text-align: center; padding: 40px">
+            <i
+              class="fas fa-inbox"
+              style="font-size: 48px; color: var(--secondary-ash-light)"
+            ></i>
+            <p style="margin-top: 10px; color: var(--secondary-ash)">
+              No submissions found
+            </p>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if submissions.has_other_pages %}
+  <div style="margin-top: 20px; text-align: center">
+    {% if submissions.has_previous %}
+    <a
+      href="?page={{ submissions.previous_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+      class="action-btn view"
+      >Previous</a
+    >
+    {% endif %}
+
+    <span style="margin: 0 15px"
+      >Page {{ submissions.number }} of {{ submissions.paginator.num_pages
+      }}</span
+    >
+
+    {% if submissions.has_next %}
+    <a
+      href="?page={{ submissions.next_page_number }}{% if status_filter %}&status={{ status_filter }}{% endif %}{% if type_filter %}&type={{ type_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}"
+      class="action-btn view"
+      >Next</a
+    >
+    {% endif %}
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  function setMode(mode) {
+    // AJAX call to update mode
+    fetch("/register/admin/set-mode/", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-CSRFToken": "{{ csrf_token }}",
+      },
+      body: JSON.stringify({ mode: mode }),
+    }).then((response) => {
+      if (response.ok) {
+        location.reload();
+      }
+    });
+  }
+
+  function approveSubmission(id, type) {
+    if (
+      confirm(
+        "Are you sure you want to approve this " +
+          type.toLowerCase() +
+          " registration?",
+      )
+    ) {
+      document.getElementById("approve-form-" + id).submit();
+    }
+  }
+
+  function rejectSubmission(id, type) {
+    const reason = prompt("Please enter reason for rejection:");
+    if (reason) {
+      document.getElementById("reject-reason-" + id).value = reason;
+      document.getElementById("reject-form-" + id).submit();
+    }
+  }
+
+  function filterSubmissions() {
+    const status = document.getElementById("status-filter").value;
+    const type = document.getElementById("type-filter").value;
+    const search = document.getElementById("search-filter").value;
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("status", status);
+    url.searchParams.set("type", type);
+    url.searchParams.set("search", search);
+    url.searchParams.set("page", "1");
+
+    window.location.href = url.toString();
+  }
+
+  let searchTimeout;
+  function debounceSearch() {
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(filterSubmissions, 500);
+  }
+</script>
+{% endblock %}

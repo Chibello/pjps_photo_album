@@ -1,0 +1,72 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pope John Paul II Major Seminary - Registration</title>
+
+    <!-- Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    />
+
+    <!-- Custom CSS -->
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'css/registration.css' %}" />
+  </head>
+  <body>
+    <!-- Loading Animation -->
+    <div id="loading-overlay" class="loading-overlay">
+      <div class="loading-content">
+        <div class="loading-logo">
+          <span>PJPS</span>
+        </div>
+        <!--h2>PJPS University</h2-->
+        <h2>Pope John Paul II Major Seminary</h2>
+        <p>Registration Portal</p>
+        <div class="loading-spinner"></div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <!--h1>PJPS University</h1-->
+        <h1>Pope John Paul II Major Seminary</h1>
+        <p>Digital Photo Album Registration</p>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="tabs">
+        <a
+          href="{% url 'registration:student_register' %}"
+          class="tab {% if active_tab == 'student' %}active{% endif %}"
+        >
+          <i class="fas fa-user-graduate"></i> Student Registration
+        </a>
+        <a
+          href="{% url 'registration:staff_register' %}"
+          class="tab {% if active_tab == 'staff' %}active{% endif %}"
+        >
+          <i class="fas fa-chalkboard-teacher"></i> Staff Registration
+        </a>
+      </div>
+
+      <!-- Content Block -->
+      {% block content %}{% endblock %}
+    </div>
+
+    <!-- JavaScript -->
+    <script src="{% static 'js/registration.js' %}"></script>
+    {% block extra_js %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,25 @@
+class StudentCreateUpdateSerializer(serializers.ModelSerializer):
+    year_level = serializers.PrimaryKeyRelatedField(
+        queryset=YearLevel.objects.all(),
+        source='current_class__year_level',
+        required=True
+    )
+    
+    class Meta:
+        model = Student
+        fields = [
+            'first_name', 'last_name', 'other_names',
+            'registration_number', 'date_of_birth',
+            'hometown', 'diocese', 'state_of_origin',
+            'year_level', 'personal_notes', 'is_active'
+        ]
+    
+    def create(self, validated_data):
+        # Create or get class for this year level
+        year_level = validated_data.pop('current_class__year_level')
+        class_obj, _ = Class.objects.get_or_create(
+            year_level=year_level,
+            name=f"{year_level.name} Class"
+        )
+        validated_data['current_class'] = class_obj
+        return super().create(validated_data)

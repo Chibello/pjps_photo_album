@@ -1,0 +1,188 @@
+{% extends 'registration/base.html' %} {% load static %} {% block content %}
+<div class="form-container">
+  {% if form.errors %}
+  <div class="form-errors">
+    <strong
+      ><i class="fas fa-exclamation-triangle"></i> Please correct the following
+      errors:</strong
+    >
+    <ul>
+      {% for field, errors in form.errors.items %} {% for error in errors %}
+      <li>{{ field|title }}: {{ error }}</li>
+      {% endfor %} {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" enctype="multipart/form-data" id="student-form">
+    {% csrf_token %}
+
+    <!-- Personal Information -->
+    <div class="form-section">
+      <h3><i class="fas fa-user"></i> Personal Information</h3>
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label for="{{ form.full_name.id_for_label }}" class="required">
+            <i class="fas fa-user"></i> Full Name
+          </label>
+          {{ form.full_name }}
+        </div>
+
+        <div class="form-group">
+          <label
+            for="{{ form.registration_number.id_for_label }}"
+            class="required"
+          >
+            <i class="fas fa-id-card"></i> Registration Number
+          </label>
+          {{ form.registration_number }}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.email.id_for_label }}">
+            <i class="fas fa-envelope"></i> Email Address
+          </label>
+          {{ form.email }}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.phone.id_for_label }}">
+            <i class="fas fa-phone"></i> Phone Number
+          </label>
+          {{ form.phone }}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.date_of_birth.id_for_label }}">
+            <i class="fas fa-calendar"></i> Date of Birth
+          </label>
+          {{ form.date_of_birth }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Location Information -->
+    <div class="form-section">
+      <h3><i class="fas fa-map-marker-alt"></i> Location Information</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="{{ form.diocese.id_for_label }}" class="required">
+            <i class="fas fa-church"></i> Diocese
+          </label>
+          {{ form.diocese }}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.hometown.id_for_label }}" class="required">
+            <i class="fas fa-home"></i> Hometown
+          </label>
+          {{ form.hometown }}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.state.id_for_label }}" class="required">
+            <i class="fas fa-map"></i> State of Origin
+          </label>
+          {{ form.state }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Academic Information -->
+    <div class="form-section">
+      <h3><i class="fas fa-graduation-cap"></i> Academic Information</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="{{ form.year_level.id_for_label }}">
+            <i class="fas fa-layer-group"></i> Year Level
+          </label>
+          {{ form.year_level }}
+        </div>
+
+        <div class="form-group full-width">
+          <label for="{{ form.previous_school.id_for_label }}">
+            <i class="fas fa-school"></i> Previous School
+          </label>
+          {{ form.previous_school }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Guardian Information -->
+    <div class="form-section">
+      <h3><i class="fas fa-users"></i> Guardian Information</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="{{ form.guardian_name.id_for_label }}">
+            <i class="fas fa-user-tie"></i> Guardian Name
+          </label>
+          {{ form.guardian_name }}
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.guardian_phone.id_for_label }}">
+            <i class="fas fa-phone-alt"></i> Guardian Phone
+          </label>
+          {{ form.guardian_phone }}
+        </div>
+
+        <div class="form-group full-width">
+          <label for="{{ form.guardian_email.id_for_label }}">
+            <i class="fas fa-envelope"></i> Guardian Email
+          </label>
+          {{ form.guardian_email }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Photo Upload -->
+    <div class="form-section">
+      <h3><i class="fas fa-camera"></i> Profile Photo</h3>
+      <div class="file-upload">
+        {{ form.photo }}
+        <div class="file-upload-content">
+          <i class="fas fa-cloud-upload-alt"></i>
+          <span>Click to upload or drag and drop</span>
+          <span style="font-size: 10px">JPG, PNG (Max 5MB)</span>
+        </div>
+        <img class="file-preview" src="#" alt="Preview" />
+      </div>
+    </div>
+
+    <!-- Password -->
+    <div class="form-section">
+      <h3><i class="fas fa-lock"></i> Security</h3>
+      <div class="form-grid">
+        <div class="form-group">
+          <label
+            for="{{ form.preferred_password.id_for_label }}"
+            class="required"
+          >
+            <i class="fas fa-key"></i> Preferred Password
+          </label>
+          {{ form.preferred_password }}
+        </div>
+
+        <div class="form-group">
+          <label for="id_confirm_password" class="required">
+            <i class="fas fa-key"></i> Confirm Password
+          </label>
+          <input
+            type="password"
+            name="confirm_password"
+            id="id_confirm_password"
+            class="form-control"
+            placeholder="Confirm your password"
+            required
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <button type="submit" class="submit-btn">
+      <i class="fas fa-paper-plane"></i> Submit Registration
+    </button>
+  </form>
+</div>
+{% endblock %}

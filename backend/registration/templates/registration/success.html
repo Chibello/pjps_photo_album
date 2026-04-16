@@ -1,0 +1,119 @@
+{% extends 'registration/base.html' %} {% load static %} {% block content %}
+<div class="success-container">
+  {% if auto_approved %}
+
+  <!-- AUTO APPROVED -->
+  <div class="success-icon" style="background: var(--success)">
+    <i class="fas fa-bolt"></i>
+  </div>
+
+  <h2>Registration Approved! 🎉</h2>
+  <p>Good news! Your registration has been automatically approved.</p>
+
+  <div class="status-card approved">
+    <h3><i class="fas fa-check-circle"></i> Account Details</h3>
+
+    <div class="status-item">
+      <span class="status-label">Name:</span>
+      <span class="status-value">{{ submission.full_name }}</span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Registration No:</span>
+      <span class="status-value">{{ submission.registration_number }}</span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Status:</span>
+      <span class="status-value">
+        <span class="badge approved">ACTIVE</span>
+      </span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Next Step:</span>
+      <span class="status-value">
+        Please check your email to set your password securely.
+      </span>
+    </div>
+  </div>
+
+  <div style="margin: 30px 0">
+    <p style="font-size: 14px; color: var(--secondary-ash)">
+      <i class="fas fa-shield-alt"></i>
+      For security reasons, passwords are never displayed or sent via email.
+    </p>
+  </div>
+
+  <a
+    href="{% url 'login' %}"
+    class="home-btn"
+    style="background: var(--success); margin-top: 20px"
+  >
+    <i class="fas fa-sign-in-alt"></i> Go to Login
+  </a>
+
+  {% else %}
+
+  <!-- PENDING APPROVAL -->
+  <div class="success-icon">
+    <i class="fas fa-clock"></i>
+  </div>
+
+  <h2>Registration Submitted Successfully!</h2>
+  <p>Your application has been received and is pending admin review.</p>
+
+  <div class="status-card pending">
+    <h3><i class="fas fa-hourglass-half"></i> Submission Details</h3>
+
+    <div class="status-item">
+      <span class="status-label">Name:</span>
+      <span class="status-value">{{ submission.full_name }}</span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Registration No:</span>
+      <span class="status-value">{{ submission.registration_number }}</span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Type:</span>
+      <span class="status-value">{{ submission.user_type }}</span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Status:</span>
+      <span class="status-value">
+        <span class="badge pending">Pending Review</span>
+      </span>
+    </div>
+
+    <div class="status-item">
+      <span class="status-label">Submitted:</span>
+      <span class="status-value">
+        {{ submission.submitted_at|date:"F d, Y H:i" }}
+      </span>
+    </div>
+  </div>
+
+  <div style="margin-top: 30px">
+    <p>
+      You will receive an email notification once your registration is reviewed.
+    </p>
+    <p style="font-size: 14px; color: var(--secondary-ash); margin-top: 10px">
+      <i class="fas fa-info-circle"></i>
+      Please save your registration number for future reference.
+    </p>
+  </div>
+
+  <a
+    href="{% url 'registration:index' %}"
+    class="home-btn"
+    style="margin-top: 30px"
+  >
+    <i class="fas fa-home"></i> Back to Home
+  </a>
+
+  {% endif %}
+</div>
+{% endblock %}
