@@ -1,0 +1,294 @@
+name: pjps_photo_album
+description: PJPS University Digital Photo Album
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI Components
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  lottie: ^2.7.0
+  flutter_staggered_animations: ^1.1.0
+
+  flutter_svg: ^2.0.7
+  shimmer: ^3.0.0
+
+
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Navigation
+  go_router: ^13.0.1
+  
+  # Networking
+  dio: ^5.4.0
+  pretty_dio_logger: ^1.3.1
+  
+  # Local Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^10.0.0
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  synchronized: ^3.1.0
+  crypto: ^3.0.3
+  workmanager: ^0.9.0+3
+  flutter_background_service: ^5.0.5
+  flutter_local_notifications: ^16.3.0
+  
+
+  # Image & Media
+  cached_network_image: ^3.3.0
+  image_picker: ^1.0.5
+  photo_view: ^0.14.0
+  flutter_image_compress: ^2.1.0
+  
+  # Utilities
+  intl: ^0.18.1
+  url_launcher: ^6.2.2
+  permission_handler: ^11.3.0
+
+  # Optional
+  local_auth: ^2.1.7
+  connectivity_plus: ^5.0.2
+  sqflite_common_ffi: ^2.3.0
+  image: ^4.3.0
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+  flutter_launcher_icons: ^0.13.1
+  flutter_native_splash: ^2.3.2
+
+#flutter_launcher_icons:
+#  android: true
+#  ios: true
+
+#  windows:
+#    generate: true
+#    image_path: "assets/icons/app_icon.png"
+
+#  macos:
+#    generate: true
+#    image_path: "assets/icons/app_icon.png"
+
+#  linux:
+#    generate: true
+#    image_path: "assets/icons/app_icon.png"
+
+#  image_path: "assets/icons/app_icon.png"
+#
+
+#flutter:
+#  uses-material-design: true
+  
+#  assets:
+#    - assets/icons/app_icon.png
+    #- assets/icons/app_icon_android.png
+    #- assets/icons/app_icon_ios.png
+#    - assets/icons/ic_launcher.png
+#    - assets/icons/ic_notification.png
+#    - assets/icons/tab_albums.png
+#    - assets/icons/tab_staff.png
+#    - assets/icons/tab_remarks.png
+#    - assets/icons/tab_profile.png
+#    - assets/icons/icon_student.png
+#    - assets/icons/icon_teacher.png
+#    - assets/icons/icon_class.png
+#    - assets/icons/icon_camera.png
+#    - assets/icons/icon_gallery.png
+#    - assets/icons/icon_fingerprint.png
+#    - assets/icons/icon_sync.png
+#    - assets/icons/icon_download.png
+#    - assets/icons/icon_upload.png
+#    - assets/icons/icon_search.png
+#    - assets/icons/icon_filter.png
+#    - assets/icons/icon_sort.png
+#    - assets/icons/icon_share.png
+#    - assets/icons/icon_delete.png
+#    - assets/icons/icon_edit.png
+#    - assets/icons/icon_add.png
+#    - assets/icons/icon_remove.png
+#    - assets/icons/icon_check.png
+#    - assets/icons/icon_close.png
+#    - assets/icons/icon_menu.png
+#    - assets/icons/icon_back.png
+#    - assets/icons/icon_forward.png
+#    - assets/icons/icon_refresh.png
+#    - assets/icons/icon_settings.png
+#    - assets/icons/icon_help.png
+#    - assets/icons/icon_info.png
+#    - assets/icons/icon_warning.png
+#    - assets/icons/icon_error.png
+#    - assets/icons/icon_success.png
+#    - assets/icons/icon_offline.png
+#    - assets/icons/icon_online.png
+#    - assets/icons/icon_wifi.png
+#    - assets/icons/icon_no_wifi.png
+#    - assets/icons/icon_battery.png
+#    - assets/icons/icon_storage.png
+#    - assets/icons/icon_cloud.png
+    
+    # Images
+#    - assets/images/logo.png
+#    - assets/images/logo_white.png
+#    - assets/images/logo_gold.png
+#    - assets/images/logo_ash.png
+#    - assets/images/splash_background.png
+#    - assets/images/splash_logo.png
+#    - assets/images/school_photo.jpg
+#    - assets/images/school_building.jpg
+#    - assets/images/school_campus.jpg
+#    - assets/images/default_avatar.png
+#    - assets/images/default_student.png
+#    - assets/images/default_teacher.png
+#    - assets/images/default_class.png
+#    - assets/images/empty_albums.png
+#    - assets/images/empty_staff.png
+#    - assets/images/empty_remarks.png
+#    - assets/images/empty_search.png
+#    - assets/images/error_404.png
+#    - assets/images/error_network.png
+#    - assets/images/error_server.png
+#    - assets/images/maintenance.png
+#    - assets/images/update_available.png
+#   - assets/images/sync_complete.png
+#    - assets/images/backup_complete.png
+#    - assets/images/congratulations.png
+#    - assets/images/achievement_badge.png
+#    - assets/images/welcome_banner.jpg
+#    - assets/images/onboarding_1.jpg
+#    - assets/images/onboarding_2.jpg
+#   - assets/images/onboarding_3.jpg
+#    - assets/images/backgrounds/gold_gradient.jpg
+#    - assets/images/backgrounds/ash_gradient.jpg
+#   - assets/images/backgrounds/pattern_dots.png
+#    - assets/images/backgrounds/pattern_lines.png
+#    - assets/images/backgrounds/pattern_hexagon.png
+    
+    # Animations
+#    - assets/animations/splash_animation.json
+#    - assets/animations/loading_animation.json
+#    - assets/animations/sync_animation.json
+#    - assets/animations/download_animation.json
+#    - assets/animations/upload_animation.json
+#    - assets/animations/success_animation.json
+#    - assets/animations/error_animation.json
+#    - assets/animations/warning_animation.json
+#    - assets/animations/empty_animation.json
+#    - assets/animations/search_animation.json
+#    - assets/animations/fingerprint_animation.json
+#    - assets/animations/camera_animation.json
+#    - assets/animations/photo_animation.json
+#    - assets/animations/gallery_animation.json
+#    - assets/animations/refresh_animation.json
+#    - assets/animations/confetti_animation.json
+#    - assets/animations/fireworks_animation.json
+#    - assets/animations/celebration_animation.json
+#    - assets/animations/progress_animation.json
+#    - assets/animations/pulse_animation.json
+#    - assets/animations/bounce_animation.json
+#    - assets/animations/slide_animation.json
+#    - assets/animations/fade_animation.json
+#    - assets/animations/rotate_animation.json
+#    - assets/animations/scale_animation.json
+#    - assets/animations/transition_animation.json
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/icons/
+    - assets/images/
+    - assets/images/backgrounds/
+    - assets/animations/
+  
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Thin.ttf
+          weight: 100
+        - asset: assets/fonts/Poppins-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/Poppins-Light.ttf
+          weight: 300
+        - asset: assets/fonts/Poppins-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/Poppins-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/Poppins-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/Poppins-ExtraBold.ttf
+          weight: 800
+        - asset: assets/fonts/Poppins-Italic.ttf
+          style: italic
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Roboto-Regular.ttf
+        - asset: assets/fonts/Roboto-Medium.ttf
+        - asset: assets/fonts/Roboto-Bold.ttf
+  #  - family: MaterialIcons
+  #    fonts:
+  #      - asset: assets/fonts/MaterialIcons-Regular.otf
+
+#flutter_launcher_icons:
+#  android: true
+#  ios: true
+#  image_path: "assets/icons/app_icon.png"
+#  adaptive_icon_background: "#F4C542"
+#  adaptive_icon_foreground: "assets/icons/app_icon_android.png"
+#  remove_alpha_ios: true
+
+
+# Add this to your pubspec.yaml (outside dev_dependencies)
+flutter_launcher_icons:
+  # Mobile platforms
+  android: true
+  ios: true
+
+  # Desktop platforms
+  windows:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+
+  macos:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+
+  linux:
+    generate: true
+    image_path: "assets/icons/app_icon.png"
+
+  # Main icon for mobile & desktop
+  image_path: "assets/icons/app_icon.png"
+
+  # Android adaptive icon background (can be color or image)
+  adaptive_icon_background: "#F4C542"
+
+  # Use same icon as foreground to avoid missing file errors
+  # adaptive_icon_foreground is optional; default uses image_path
+
+  # iOS option
+  remove_alpha_ios: true
+
+flutter_native_splash:
+  color: "#F4C542"
+  image: assets/images/splash_logo.png
+  android: true
+  ios: true
+  
+  android_12:
+    image: assets/images/splash_logo.png
+    color: "#F4C542"

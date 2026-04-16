@@ -1,0 +1,199 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/biometric_service.dart';
+import '../../services/album_service.dart';
+import '../../services/staff_service.dart';
+import '../../services/remarks_service.dart';
+import '../../services/connectivity_service.dart';
+import '../../repositories/student_repository.dart';
+import '../../notifiers/auth_notifier.dart';
+import '../../notifiers/album_notifier.dart';
+import '../../notifiers/staff_notifier.dart';
+import '../../notifiers/remarks_notifier.dart';
+import '../../notifiers/sync_notifier.dart';
+import '../database/database_helper.dart';
+import '../routes/app_router.dart';
+import '../../models/student_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/student_model.dart';
+import '../services/album_service.dart';
+
+
+// ---------------------- Services ----------------------
+
+// API Service
+final apiServiceProvider = Provider<ApiService>((ref) {
+  return ApiService();
+});
+
+// Biometric Service
+final biometricServiceProvider = Provider<BiometricService>((ref) {
+  return BiometricService();
+});
+
+// Database Helper
+final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
+  return DatabaseHelper();
+});
+
+// Connectivity Service (provide the actual service)
+//final connectivityProvider = Provider<ConnectivityService>((ref) {
+//  return ConnectivityService();
+//});
+
+final connectivityProvider =
+    StateNotifierProvider<ConnectivityNotifier, ConnectivityState>((ref) {
+  return ConnectivityNotifier();
+});
+// ---------------------- Auth ----------------------
+
+// Auth Service
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService(
+    ref.read(apiServiceProvider),
+    ref.read(biometricServiceProvider),
+  );
+});
+
+// Auth Notifier
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  final authService = ref.read(authServiceProvider);
+  final biometricService = ref.read(biometricServiceProvider);
+  return AuthNotifier(authService, biometricService);
+});
+
+// ---------------------- Repositories ----------------------
+
+// Student Repository
+final studentRepositoryProvider = Provider<StudentRepository>((ref) {
+  return StudentRepository(
+    apiService: ref.read(apiServiceProvider),
+    dbHelper: ref.read(databaseHelperProvider),
+    connectivity: ref.read(connectivityProvider.notifier),
+  );
+});
+// ---------------------- Album ----------------------
+
+// Album Service
+//final albumServiceProvider = Provider<AlbumService>((ref) {
+//  return AlbumService(ref.read(apiServiceProvider));
+//});
+
+// Album Notifier
+//final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+//  return AlbumNotifier(
+//    ref, // first argument
+//    ref.read(albumServiceProvider), // second
+//    ref.read(studentRepositoryProvider), // third
+//  );
+//});
+// ---------------------- Album ----------------------
+
+// Album Service
+// Album Service
+final albumServiceProvider = Provider<AlbumService>((ref) {
+  return AlbumService(ref.read(apiServiceProvider));
+});
+
+// Album Notifier
+final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+  final albumService = ref.read(albumServiceProvider);
+
+  // Pass only AlbumService, as your notifier expects
+  return AlbumNotifier(albumService);
+});
+// ---------------------- Staff ----------------------
+
+// Staff Service
+final staffServiceProvider = Provider<StaffService>((ref) {
+  return StaffService(ref.read(apiServiceProvider));
+});
+
+// Staff Notifier
+final staffProvider = StateNotifierProvider<StaffNotifier, StaffState>((ref) {
+  return StaffNotifier(ref.read(staffServiceProvider));
+});
+
+// ---------------------- Remarks ----------------------
+
+// Remarks Service
+final remarksServiceProvider = Provider<RemarksService>((ref) {
+  return RemarksService(ref.read(apiServiceProvider));
+});
+
+// Remarks Notifier
+final remarksProvider =
+    StateNotifierProvider<RemarksNotifier, RemarksState>((ref) {
+  return RemarksNotifier(ref.read(remarksServiceProvider));
+});
+
+// ---------------------- Sync ----------------------
+
+final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
+  return SyncNotifier();
+});
+
+// ---------------------- Theme ----------------------
+
+final themeModeProvider = StateProvider<ThemeMode>((ref) {
+  return ThemeMode.light;
+});
+
+// ---------------------- Router ----------------------
+
+final appRouterProvider = Provider((ref) {
+  return appRouter;
+});
+
+// This assumes AlbumNotifier has a method or list to get students by year
+//final studentsByYearProvider =
+//    FutureProvider.family<List<StudentListModel>, String>((ref, yearId) async {
+//  final albumNotifier = ref.read(albumProvider.notifier);
+// Replace this with your actual method to fetch students for a year
+//  return albumNotifier.getStudentsByYear(yearId);
+//});
+
+//final studentsByYearProvider =
+//    FutureProvider.family<List<StudentListModel>, String>((ref, yearId) {
+//  final repo = ref.read(studentRepositoryProvider);
+//  return repo.getStudentsInYear(yearId);
+//});
+
+final studentsByYearProvider =
+    FutureProvider.family<List<StudentListModel>, String>((ref, yearId) {
+  final repo = ref.read(studentRepositoryProvider);
+  final albumService = ref.watch(albumServiceProvider); // your AlbumService provider
+  return repo.getStudentsInYear(yearId);
+});
+
+//final studentRepositoryProvider = Provider((ref) => StudentRepository(
+//      apiService: ref.read(apiServiceProvider),
+//      dbHelper: ref.read(databaseHelperProvider),
+//      connectivity: ref.read(connectivityNotifierProvider),
+//));
+
+/// Provides an instance of RemarksService
+//final remarksServiceProvider = Provider<RemarksService>((ref) {
+// final api = ref.read(apiServiceProvider); // your existing ApiService provider
+// return RemarksService(api);
+//});
+
+/// Provides remarks for a specific contentType + objectId
+final remarkBookProvider = FutureProvider.family(
+  (ref, Map<String, String> params) async {
+    final service = ref.read(remarksServiceProvider);
+    return service.getRemarkBook(params['contentType']!, params['objectId']!);
+  },
+);
+
+
+
+// This provider fetches students for a specific year
+final studentsByYearProvider =
+    FutureProvider.family<List<StudentListModel>, String>((ref, yearId) async {
+  final albumService = ref.watch(albumServiceProvider); // your AlbumService provider
+  return albumService.getStudentsByYear(yearId);
+});

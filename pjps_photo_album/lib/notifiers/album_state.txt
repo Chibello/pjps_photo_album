@@ -1,0 +1,188 @@
+// album_state.dart
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/student_model.dart';
+import '../models/class_model.dart';
+import '../models/year_level_model.dart';
+import '../services/album_service.dart';
+import '../repositories/student_repository.dart';
+import '../services/connectivity_service.dart';
+import '../services/image_cache_service.dart';
+import '../core/database/database_helper.dart';
+import 'package:collection/collection.dart'; // for firstWhereOrNull
+
+class AlbumState {
+  final bool isLoadingYears;
+  final bool isLoadingClasses;
+  final List<YearLevelModel> yearLevels;
+  final List<ClassGroupModel> currentClasses;
+  final ClassGroupModel? currentClass;
+  final List<StudentListModel> currentStudents;
+  final StudentDetailModel? currentStudent;
+  final Map<String, dynamic>? dashboardStats;
+  final String? error;
+  final bool isOffline;
+
+  const AlbumState({
+    this.isLoadingYears = false,
+    this.isLoadingClasses = false,
+    this.yearLevels = const [],
+    this.currentClasses = const [],
+    this.currentClass,
+    this.currentStudents = const [],
+    this.currentStudent,
+    this.dashboardStats,
+    this.error,
+    this.isOffline = false,
+  });
+
+  AlbumState copyWith({
+    bool? isLoadingYears,
+    bool? isLoadingClasses,
+    List<YearLevelModel>? yearLevels,
+    List<ClassGroupModel>? currentClasses,
+    ClassGroupModel? currentClass,
+    List<StudentListModel>? currentStudents,
+    StudentDetailModel? currentStudent,
+    Map<String, dynamic>? dashboardStats,
+    String? error,
+    bool? isOffline,
+  }) {
+    return AlbumState(
+      isLoadingYears: isLoadingYears ?? this.isLoadingYears,
+      isLoadingClasses: isLoadingClasses ?? this.isLoadingClasses,
+      yearLevels: yearLevels ?? this.yearLevels,
+      currentClasses: currentClasses ?? this.currentClasses,
+      currentClass: currentClass ?? this.currentClass,
+      currentStudents: currentStudents ?? this.currentStudents,
+      currentStudent: currentStudent ?? this.currentStudent,
+      dashboardStats: dashboardStats ?? this.dashboardStats,
+      error: error ?? this.error,
+      isOffline: isOffline ?? this.isOffline,
+    );
+  }
+}
+
+class AlbumNotifier extends StateNotifier<AlbumState> {
+  final Ref ref;
+  final AlbumService _albumService;
+  final StudentRepository _studentRepository;
+  final ImageCacheService _imageCache = ImageCacheService(); // singleton
+
+  AlbumNotifier(this.ref, this._albumService, this._studentRepository)
+      : super(const AlbumState());
+
+  Future<bool> _isOnline() async =>
+      await ref.read(connectivityProvider.notifier).isOnline;
+
+  void _preloadStudentImages(List<StudentListModel> students) {
+    final urls = students
+        .map((s) => s.profilePhotoThumbnail)
+        .where((url) => url != null && url.isNotEmpty)
+        .cast<String>()
+        .toList();
+    if (urls.isNotEmpty) {
+      _imageCache.preloadImages(urls);
+    }
+  }
+
+  // =========================
+  // LOAD YEAR LEVELS
+  // =========================
+  Future<void> loadYearLevels() async {
+    state = state.copyWith(isLoadingYears: true, error: null);
+
+    try {
+      final isOnline = await _isOnline();
+
+      if (isOnline) {
+        try {
+          final yearLevels = await _albumService.getYearLevels();
+          state = state.copyWith(
+            yearLevels: yearLevels,
+            isLoadingYears: false,
+            isOffline: false,
+          );
+          return;
+        } catch (e) {
+          print('Online fetch yearLevels failed: $e');
+        }
+      }
+
+      // Offline fallback
+      final cached = await DatabaseHelper().query('year_levels');
+      final yearLevels = cached
+          .map((json) => YearLevelModel.fromJson({
+                'id': json['id'],
+                'name': json['name'],
+                'display_order': json['display_order'],
+                'class_count': json['class_count'],
+                'student_count': json['student_count'],
+              }))
+          .toList();
+
+      state = state.copyWith(
+        yearLevels: yearLevels,
+        isLoadingYears: false,
+        isOffline: true,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingYears: false, error: e.toString());
+    }
+  }
+
+  // =========================
+  // LOAD CLASSES FOR YEAR
+  // =========================
+  Future<void> loadClassesForYear(String yearLevelId) async {
+    state = state.copyWith(isLoadingClasses: true, error: null);
+
+    try {
+      final isOnline = await _isOnline();
+
+      if (isOnline) {
+        try {
+          final classes =
+              await _albumService.getClasses(yearLevelId: yearLevelId);
+          state = state.copyWith(
+            currentClasses: classes,
+            isLoadingClasses: false,
+            isOffline: false,
+          );
+          return;
+        } catch (e) {
+          print('Online fetch classes failed: $e');
+        }
+      }
+
+      // Offline fallback
+      final cached = await DatabaseHelper().query(
+        'classes',
+        where: yearLevelId.isNotEmpty ? 'year_level_id = ?' : null,
+        whereArgs: yearLevelId.isNotEmpty ? [yearLevelId] : null,
+      );
+
+      final classes = cached
+          .map((json) => ClassGroupModel.fromJson({
+                'id': json['id'],
+                'name': json['name'],
+                'year_level': json['year_level_id'],
+                'year_level_name': json['year_level_name'],
+                'academic_year': json['academic_year'],
+                'academic_year_name': json['academic_year_name'],
+                'student_count': json['student_count'],
+                'notes': json['notes'],
+                'created_at': json['last_sync'],
+                'updated_at': json['last_sync'],
+              }))
+          .toList();
+
+      state = state.copyWith(
+        currentClasses: classes,
+        isLoadingClasses: false,
+        isOffline: true,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoadingClasses: false, error: e.toString());
+    }
+  }
+}

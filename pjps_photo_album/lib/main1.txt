@@ -1,0 +1,197 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+//import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'core/theme/app_theme.dart';
+import 'core/providers/providers.dart';
+import 'core/database/database_helper.dart';
+import 'services/sync_service.dart';
+import 'notifiers/connectivity_notifier.dart';
+import 'core/theme/app_colors.dart';
+
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  print('🚀 Starting PJPS Photo Album...');
+
+  runApp(
+    const ProviderScope(
+      child: MyApp(),
+    ),
+  );
+}
+
+class MyApp extends ConsumerStatefulWidget {
+  const MyApp({super.key});
+
+  @override
+  ConsumerState<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends ConsumerState<MyApp> {
+  bool _authenticated = false;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    try {
+      print('📦 Initializing local database...');
+      final db = DatabaseHelper();
+      await db.database;
+      await db.clearOldData();
+
+      print('🔄 Setting up background sync...');
+      await SyncService.initialize();
+
+      final connectivity = ConnectivityNotifier();
+
+      if (connectivity.isOnline) {
+        print('📡 Online - Performing initial sync...');
+        try {
+          await SyncService.fullSync();
+          print('✅ Initial sync completed');
+        } catch (e) {
+          print('⚠️ Initial sync failed: $e');
+        }
+      } else {
+        print('📴 Offline - Using cached data');
+      }
+
+      // biometric check AFTER initialization
+      await _checkBiometricLogin();
+
+      print('✅ App initialized successfully!');
+    } catch (e) {
+      print('❌ Initialization error: $e');
+      _authenticated = true;
+    }
+
+    if (mounted) {
+      setState(() {
+        _initialized = true;
+      });
+    }
+  }
+
+  Future<void> _checkBiometricLogin() async {
+    try {
+      final auth = ref.read(authProvider.notifier);
+
+      // check if user already logged in
+      final hasCredentials = await auth.hasSavedCredentials();
+
+      if (!hasCredentials) {
+        print('🔐 No saved login found, skipping biometric');
+        _authenticated = true;
+        return;
+      }
+
+      // run biometric only if credentials exist
+      if (auth.biometricAvailable) {
+        print('🔐 Requesting biometric authentication...');
+        final success = await auth.loginWithBiometrics();
+        _authenticated = success;
+      } else {
+        _authenticated = true;
+      }
+    } catch (e) {
+      print('⚠️ Biometric login failed: $e');
+      _authenticated = true;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
+    final connectivity = ref.watch(connectivityProvider);
+
+    if (!_initialized) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    if (!_authenticated) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: Scaffold(
+          body: Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+      );
+    }
+
+    return MaterialApp.router(
+      title: 'PJPS Photo Album',
+      debugShowCheckedModeBanner: false,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: themeMode,
+      routerConfig: router,
+      builder: (context, child) {
+        return Stack(
+          children: [
+            child!,
+
+            // Offline banner
+            if (!connectivity.isOnline)
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  color: Colors.orange,
+                  padding: const EdgeInsets.all(8),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.wifi_off, color: Colors.white, size: 16),
+                      SizedBox(width: 8),
+                      Text(
+                        'Offline Mode - Using Cached Data',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+            // Sync button
+            if (connectivity.isOnline)
+              Positioned(
+                bottom: 16,
+                right: 16,
+                child: FloatingActionButton.small(
+                  onPressed: () async {
+                    await SyncService.syncNow();
+                    if (!context.mounted) return;
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Sync completed'),
+                        backgroundColor: Colors.green,
+                      ),
+                    );
+                  },
+                  backgroundColor: AppColors.primaryGold,
+                  child: const Icon(Icons.sync, color: Colors.white),
+                ),
+              ),
+          ],
+        );
+      },
+    );
+  }
+}

@@ -1,0 +1,47 @@
+class YearLevelModel {
+  final String id;
+  final String name;
+  final int displayOrder;
+  final bool isActive;
+  final int classCount;
+  final int studentCount;
+
+  // New fields
+  final String? profilePhotoThumbnail;
+  final String? yearLevelName;
+
+  YearLevelModel({
+    required this.id,
+    required this.name,
+    required this.displayOrder,
+    required this.isActive,
+    required this.classCount,
+    required this.studentCount,
+    this.profilePhotoThumbnail,
+    this.yearLevelName,
+  });
+
+  factory YearLevelModel.fromJson(Map<String, dynamic> json) {
+    return YearLevelModel(
+      id: json['id'].toString(),
+      name: json['name'] ?? '',
+      displayOrder: json['display_order'] ?? 0,
+      isActive: json['is_active'] ?? true,
+      classCount: json['class_count'] ?? 0,
+      studentCount: json['student_count'] ?? 0,
+      profilePhotoThumbnail: json['profile_photo_thumbnail'],
+      yearLevelName: json['year_level_name'],
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'display_order': displayOrder,
+        'is_active': isActive,
+        'class_count': classCount,
+        'student_count': studentCount,
+        'profile_photo_thumbnail': profilePhotoThumbnail,
+        'year_level_name': yearLevelName,
+      };
+}

@@ -1,0 +1,79 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:image/image.dart' as img;
+
+void main() async {
+  print('🎨 Generating app icons...');
+  
+  // Create directories
+  Directory('assets/icons').createSync(recursive: true);
+  Directory('android/app/src/main/res/mipmap-hdpi').createSync(recursive: true);
+  Directory('android/app/src/main/res/mipmap-mdpi').createSync(recursive: true);
+  Directory('android/app/src/main/res/mipmap-xhdpi').createSync(recursive: true);
+  Directory('android/app/src/main/res/mipmap-xxhdpi').createSync(recursive: true);
+  Directory('android/app/src/main/res/mipmap-xxxhdpi').createSync(recursive: true);
+  Directory('ios/Runner/Assets.xcassets/AppIcon.appiconset').createSync(recursive: true);
+  
+  // Create base icon (512x512 gold circle with "P")
+  final baseIcon = img.Image(width: 512, height: 512);
+  
+  // Fill with gold gradient
+  for (int y = 0; y < 512; y++) {
+    for (int x = 0; x < 512; x++) {
+      double dx = (x - 256).abs();
+      double dy = (y - 256).abs();
+      double distance = (dx * dx + dy * dy).sqrt();
+      
+      if (distance <= 256) {
+        double intensity = 1.0 - (distance / 256) * 0.3;
+        int gold = (244 * intensity).toInt();
+        baseIcon.setPixelRgba(x, y, gold, 197, 66, 255);
+      } else {
+        baseIcon.setPixelRgba(x, y, 107, 114, 128, 255);
+      }
+    }
+  }
+  
+  // Save base icon
+  img.encodePngFile('assets/icons/app_icon.png', baseIcon);
+  print('✅ Base icon created');
+  
+  // Generate Android icons
+  final androidSizes = {
+    'hdpi': 72,
+    'mdpi': 48,
+    'xhdpi': 96,
+    'xxhdpi': 144,
+    'xxxhdpi': 192,
+  };
+  
+  androidSizes.forEach((folder, size) {
+    final resized = img.copyResize(baseIcon, width: size, height: size);
+    img.encodePngFile('android/app/src/main/res/mipmap-$folder/ic_launcher.png', resized);
+    print('✅ Android icon $folder created');
+  });
+  
+  // Generate iOS icons
+  final iosSizes = [20, 29, 40, 58, 60, 76, 80, 87, 120, 152, 167, 180, 1024];
+  
+  for (int size in iosSizes) {
+    final resized = img.copyResize(baseIcon, width: size, height: size);
+    img.encodePngFile('ios/Runner/Assets.xcassets/AppIcon.appiconset/icon_${size}x$size.png', resized);
+    
+    if (size < 1024) {
+      final resized2x = img.copyResize(baseIcon, width: size * 2, height: size * 2);
+      img.encodePngFile('ios/Runner/Assets.xcassets/AppIcon.appiconset/icon_${size}x$size@2x.png', resized2x);
+    }
+    
+    print('✅ iOS icon $size created');
+  }
+  
+  // Generate notification icon
+  final notificationIcon = img.copyResize(baseIcon, width: 48, height: 48);
+  img.encodePngFile('android/app/src/main/res/drawable/ic_notification.png', notificationIcon);
+  
+  print('🎉 All icons generated successfully!');
+  print('\nNext steps:');
+  print('1. Run: flutter pub get');
+  print('2. Run: flutter run');
+}

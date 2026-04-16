@@ -1,0 +1,45 @@
+Future<void> _loadClasses() async {
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final yearLevels =
+          await ref.read(albumProvider.notifier).loadYearLevels();
+      // This would get classes from API
+      await Future.delayed(const Duration(seconds: 1));
+      setState(() {
+        _classes = [
+          {
+            'id': '1',
+            'name': 'Computer Science A',
+            'year': 'Year 1',
+            'students': 45
+          },
+          {
+            'id': '2',
+            'name': 'Computer Science B',
+            'year': 'Year 1',
+            'students': 42
+          },
+          {
+            'id': '3',
+            'name': 'Mathematics A',
+            'year': 'Year 2',
+            'students': 38
+          },
+        ];
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load classes: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }

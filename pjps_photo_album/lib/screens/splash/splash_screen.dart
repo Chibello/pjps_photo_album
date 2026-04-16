@@ -1,0 +1,126 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/providers/providers.dart';
+import '../../widgets/lottie_animation.dart'; // now used
+
+class SplashScreen extends ConsumerStatefulWidget {
+  const SplashScreen({super.key});
+
+  @override
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
+}
+
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animationController = AnimationController(vsync: this);
+
+    // Navigate after animation
+    Future.delayed(const Duration(seconds: 3), () {
+      _checkAuthStatus();
+    });
+  }
+
+  Future<void> _checkAuthStatus() async {
+    final authNotifier = ref.read(authProvider.notifier);
+    final isAuthenticated = await authNotifier.checkAuthStatus();
+
+    if (mounted) {
+      if (isAuthenticated) {
+        context.go('/dashboard');
+      } else {
+        context.go('/home');
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.primaryGold,
+      body: Stack(
+        children: [
+          // Background pattern
+          Positioned.fill(
+            child: Opacity(
+              opacity: 0.1,
+              child: Image.asset(
+                'assets/images/backgrounds/pattern_dots.png',
+                repeat: ImageRepeat.repeat,
+              ),
+            ),
+          ),
+
+          // Center content
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Use your custom LottieAnimation widget
+                LottieAnimation(
+                  assetPath: 'assets/animations/splash_animation.json',
+                  width: 200,
+                  height: 200,
+                  controller: _animationController,
+                  onLoaded: (composition) {
+                    _animationController
+                      ..duration = composition.duration
+                      ..forward();
+                  },
+                ),
+
+                const SizedBox(height: 24),
+                // Logo
+                SizedBox(
+                  width: 160,
+                  height: 160,
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/images/jp_logo.png',
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                const Text(
+                  'PJPS',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+
+                const SizedBox(height: 8),
+
+                const Text(
+                  'Digital Photo Album',
+                  style: TextStyle(
+                    color: Colors.white70,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}

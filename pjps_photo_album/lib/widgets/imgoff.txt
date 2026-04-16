@@ -1,0 +1,133 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import '../services/image_cache_service.dart';
+import '../core/theme/app_colors.dart';
+
+class OfflineImage extends StatelessWidget {
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Widget? placeholder;
+  final Widget? errorWidget;
+  final bool useCache;
+
+  const OfflineImage({
+    super.key,
+    required this.imageUrl,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.placeholder,
+    this.errorWidget,
+    this.useCache = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) return _buildPlaceholder();
+
+    if (!useCache) {
+      // Direct network load without cache
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildError(),
+      );
+    }
+
+    return FutureBuilder<File?>(
+      future: _getCachedFile(imageUrl),
+      builder: (context, snapshot) {
+        if (snapshot.hasData && snapshot.data != null) {
+          // Load image from local file cache
+          return Image.file(
+            snapshot.data!,
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) => _buildError(),
+          );
+        }
+
+        // Load from network and cache
+        return CachedNetworkImage(
+          imageUrl: imageUrl,
+          width: width,
+          height: height,
+          fit: fit,
+          placeholder: (context, url) => _buildPlaceholder(),
+          errorWidget: (context, url, error) => _buildError(),
+          cacheManager: CustomCacheManager.instance,
+        );
+      },
+    );
+  }
+
+  Future<File?> _getCachedFile(String url) async {
+    try {
+      final fileInfo = await CustomCacheManager.instance.getFileFromCache(url);
+      if (fileInfo != null) return fileInfo.file;
+
+      // Not cached yet, download and cache
+      final file = await CustomCacheManager.instance.getSingleFile(url);
+      return file;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: width,
+      height: height,
+      color: AppColors.lightGrey,
+      child: placeholder ??
+          Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor:
+                    AlwaysStoppedAnimation<Color>(AppColors.primaryGold),
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildError() {
+    return Container(
+      width: width,
+      height: height,
+      color: AppColors.lightGrey,
+      child: errorWidget ??
+          const Center(
+            child: Icon(
+              Icons.broken_image,
+              color: AppColors.secondaryAsh,
+              size: 30,
+            ),
+          ),
+    );
+  }
+}
+
+// -------------------
+// Custom Cache Manager
+// -------------------
+class CustomCacheManager {
+  static final CacheManager instance = CacheManager(
+    Config(
+      'customCache', // cache key
+      stalePeriod: const Duration(days: 30), // cache expiry
+      maxNrOfCacheObjects: 200, // max cached files
+    ),
+  );
+}

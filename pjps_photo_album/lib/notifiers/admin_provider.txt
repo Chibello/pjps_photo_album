@@ -1,0 +1,35 @@
+// Delete Student
+Future<bool> deleteStudent(String studentId) async {
+  state = state.copyWith(isLoading: true, error: null);
+  try {
+    await _adminService.deleteStudent(studentId);
+    // Refresh the student list
+    await loadAllStudents();
+    state = state.copyWith(isLoading: false);
+    return true;
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      error: e.toString(),
+    );
+    return false;
+  }
+}
+
+// Delete Staff
+Future<bool> deleteStaff(String staffId) async {
+  state = state.copyWith(isLoading: true, error: null);
+  try {
+    await _adminService.deleteStaff(staffId);
+    // Refresh the staff list
+    await loadAllStaff();
+    state = state.copyWith(isLoading: false);
+    return true;
+  } catch (e) {
+    state = state.copyWith(
+      isLoading: false,
+      error: e.toString(),
+    );
+    return false;
+  }
+}

@@ -1,0 +1,76 @@
+name: pjps_photo_album
+description: PJPS University Digital Photo Album
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # UI Components
+  cupertino_icons: ^1.0.6
+  google_fonts: ^6.1.0
+  lottie: ^2.7.0
+  flutter_staggered_animations: ^1.1.0
+  
+  # State Management
+  flutter_riverpod: ^2.4.9
+  
+  # Navigation
+  go_router: ^13.0.1
+  
+  # Networking
+  dio: ^5.4.0
+  pretty_dio_logger: ^1.3.1
+  
+  # Local Storage
+  shared_preferences: ^2.2.2
+  flutter_secure_storage: ^9.0.0
+  sqflite: ^2.3.0
+  path_provider: ^2.1.1
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  synchronized: ^3.1.0
+  crypto: ^3.0.3
+  workmanager: ^0.5.1
+  flutter_background_service: ^5.0.5
+  flutter_local_notifications: ^16.3.0
+  
+
+  # Image & Media
+  cached_network_image: ^3.3.0
+  image_picker: ^1.0.5
+  photo_view: ^0.14.0
+  flutter_image_compress: ^2.1.0
+  
+  # Utilities
+  intl: ^0.18.1
+  url_launcher: ^6.2.2
+  permission_handler: ^11.3.0
+
+  # Optional
+  local_auth: ^2.1.7
+  connectivity_plus: ^5.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.1
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/animations/
+  
+  fonts:
+    - family: Poppins
+      fonts:
+        - asset: assets/fonts/Poppins-Regular.ttf
+        - asset: assets/fonts/Poppins-Bold.ttf
+          weight: 700
