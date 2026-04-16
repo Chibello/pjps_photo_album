@@ -1,0 +1,141 @@
+import 'package:dio/dio.dart';
+import '../models/student_model.dart';
+import '../models/class_model.dart';
+import '../models/year_level_model.dart';
+import 'api_service.dart';
+
+class AlbumService {
+  final ApiService _apiService;
+
+  AlbumService(this._apiService);
+
+  // =========================
+  // Year Levels
+  // =========================
+  Future<List<YearLevelModel>> getYearLevels() async {
+    try {
+      final response = await _apiService.get('/albums/year-levels/');
+      return (response.data as List)
+          .map((json) => YearLevelModel.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  // =========================
+  // Classes
+  // =========================
+  Future<List<ClassGroupModel>> getClasses({String? yearLevelId}) async {
+    try {
+      final queryParams =
+          yearLevelId != null ? {'year_level': yearLevelId} : null;
+
+      final response = await _apiService.get(
+        '/albums/classes/',
+        queryParameters: queryParams,
+      );
+
+      return (response.data as List)
+          .map((json) => ClassGroupModel.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  Future<ClassGroupModel> getClassDetails(String classId) async {
+    try {
+      final response = await _apiService.get('/albums/classes/$classId/');
+      return ClassGroupModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  // =========================
+  // ✅ CREATE CLASS (ADDED)
+  // =========================
+  Future<ClassGroupModel> createClass(Map<String, dynamic> data) async {
+    try {
+      final response = await _apiService.post(
+        '/albums/classes/',
+        data: {
+          'name': data['name'],
+          'year_level': data['yearLevelId'], // 🔥 maps correctly to backend
+        },
+      );
+
+      return ClassGroupModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  // =========================
+  // Students
+  // =========================
+  Future<List<StudentListModel>> getStudentsInClass(String classId) async {
+    try {
+      final response =
+          await _apiService.get('/albums/classes/$classId/students/');
+
+      return (response.data as List)
+          .map((json) => StudentListModel.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  Future<StudentDetailModel> getStudentDetails(String studentId) async {
+    try {
+      final response = await _apiService.get('/albums/students/$studentId/');
+      return StudentDetailModel.fromJson(response.data);
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  Future<List<StudentListModel>> searchStudents(String query) async {
+    try {
+      final response = await _apiService.get(
+        '/albums/students/',
+        queryParameters: {'search': query},
+      );
+
+      return (response.data as List)
+          .map((json) => StudentListModel.fromJson(json))
+          .toList();
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  // =========================
+  // Dashboard Stats
+  // =========================
+  Future<Map<String, dynamic>> getDashboardStats() async {
+    try {
+      final response = await _apiService.get('/albums/dashboard/stats/');
+      return response.data;
+    } on DioException catch (e) {
+      throw Exception(_handleError(e));
+    }
+  }
+
+  // =========================
+  // Error Handler
+  // =========================
+  String _handleError(DioException e) {
+    if (e.response?.data != null) {
+      if (e.response?.data is Map) {
+        return e.response?.data['error'] ??
+            e.response?.data['message'] ??
+            'An error occurred';
+      }
+      return e.response?.data.toString() ?? 'An error occurred';
+    }
+    return 'Network error. Please check your connection.';
+  }
+}

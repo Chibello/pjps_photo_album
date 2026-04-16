@@ -1,0 +1,273 @@
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'dart:io';
+
+import '../../core/theme/app_colors.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../widgets/custom_button.dart';
+import '../../services/album_service.dart';
+import '../../services/api_service.dart';
+import '../../models/class_model.dart';
+
+class AddEditStudentScreen extends StatefulWidget {
+  final String? studentId;
+
+  const AddEditStudentScreen({super.key, this.studentId});
+
+  @override
+  State<AddEditStudentScreen> createState() => _AddEditStudentScreenState();
+}
+
+class _AddEditStudentScreenState extends State<AddEditStudentScreen> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _firstNameController = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _regNoController = TextEditingController();
+  final _dioceseController = TextEditingController();
+  final _hometownController = TextEditingController();
+
+  File? _imageFile;
+
+  String? _selectedClassId;
+  String? _selectedState;
+
+  List<ClassGroupModel> _classes = [];
+  bool _isLoading = false;
+
+  final AlbumService _albumService = AlbumService(ApiService());
+
+  @override
+  void initState() {
+    super.initState();
+    _loadClasses();
+  }
+
+  // ✅ FETCH CLASSES FROM BACKEND
+  Future<void> _loadClasses() async {
+    setState(() => _isLoading = true);
+
+    try {
+      final classes = await _albumService.getClasses();
+      setState(() => _classes = classes);
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+
+    setState(() => _isLoading = false);
+  }
+
+  // ✅ PICK IMAGE
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() => _imageFile = File(picked.path));
+    }
+  }
+
+  // ✅ SAVE (CREATE / UPDATE)
+  Future<void> _saveStudent() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedClassId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a class')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+
+    try {
+      final formData = {
+        'first_name': _firstNameController.text,
+        'last_name': _lastNameController.text,
+        'registration_number': _regNoController.text,
+        'diocese': _dioceseController.text,
+        'hometown': _hometownController.text,
+        'state_of_origin': _selectedState,
+        'class': _selectedClassId,
+      };
+
+      if (widget.studentId == null) {
+        // CREATE
+        await _albumService.createStudent(formData, _imageFile);
+      } else {
+        // UPDATE
+        await _albumService.updateStudent(
+            widget.studentId!, formData, _imageFile);
+      }
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+              widget.studentId == null ? 'Student added' : 'Student updated'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+
+    setState(() => _isLoading = false);
+  }
+
+  // ✅ DELETE
+  Future<void> _deleteStudent() async {
+    if (widget.studentId == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _albumService.deleteStudent(widget.studentId!);
+
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Student deleted'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.toString())));
+    }
+
+    setState(() => _isLoading = false);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isEditing = widget.studentId != null;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(isEditing ? 'Edit Student' : 'Add Student'),
+        actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete),
+              onPressed: _deleteStudent,
+            )
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(16),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    // PHOTO
+                    GestureDetector(
+                      onTap: _pickImage,
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundColor: AppColors.lightGrey,
+                        backgroundImage:
+                            _imageFile != null ? FileImage(_imageFile!) : null,
+                        child: _imageFile == null
+                            ? const Icon(Icons.camera_alt, size: 40)
+                            : null,
+                      ),
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    CustomTextField(
+                      controller: _firstNameController,
+                      label: 'First Name',
+                      validator: (v) => v!.isEmpty ? 'Enter first name' : null,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    CustomTextField(
+                      controller: _lastNameController,
+                      label: 'Last Name',
+                      validator: (v) => v!.isEmpty ? 'Enter last name' : null,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    CustomTextField(
+                      controller: _regNoController,
+                      label: 'Registration Number',
+                      validator: (v) => v!.isEmpty ? 'Enter reg number' : null,
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    CustomTextField(
+                      controller: _dioceseController,
+                      label: 'Diocese',
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    CustomTextField(
+                      controller: _hometownController,
+                      label: 'Hometown',
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // STATE
+                    DropdownButtonFormField<String>(
+                      value: _selectedState,
+                      decoration: const InputDecoration(labelText: 'State'),
+                      items: ['Lagos', 'Abuja', 'Enugu']
+                          .map((s) => DropdownMenuItem(
+                                value: s,
+                                child: Text(s),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedState = v),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // CLASS (FROM BACKEND)
+                    DropdownButtonFormField<String>(
+                      value: _selectedClassId,
+                      decoration: const InputDecoration(labelText: 'Class'),
+                      items: _classes
+                          .map((c) => DropdownMenuItem(
+                                value: c.id,
+                                child: Text(c.name),
+                              ))
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedClassId = v),
+                      validator: (v) => v == null ? 'Select a class' : null,
+                    ),
+
+                    const SizedBox(height: 24),
+
+                    CustomButton(
+                      text: isEditing ? 'Update Student' : 'Add Student',
+                      onPressed: _saveStudent,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _firstNameController.dispose();
+    _lastNameController.dispose();
+    _regNoController.dispose();
+    _dioceseController.dispose();
+    _hometownController.dispose();
+    super.dispose();
+  }
+}

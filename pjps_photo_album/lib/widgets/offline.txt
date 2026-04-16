@@ -1,0 +1,151 @@
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:dio/dio.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import '../services/image_cache_service.dart';
+import '../core/theme/app_colors.dart';
+
+class OfflineImage extends StatelessWidget {
+  final String imageUrl;
+  final double? width;
+  final double? height;
+  final BoxFit fit;
+  final Widget? placeholder;
+  final Widget? errorWidget;
+  final bool useCache;
+
+  const OfflineImage({
+    super.key,
+    required this.imageUrl,
+    this.width,
+    this.height,
+    this.fit = BoxFit.cover,
+    this.placeholder,
+    this.errorWidget,
+    this.useCache = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl.isEmpty) {
+      return _buildPlaceholder();
+    }
+
+    if (!useCache) {
+      return CachedNetworkImage(
+        imageUrl: imageUrl,
+        width: width,
+        height: height,
+        fit: fit,
+        placeholder: (context, url) => _buildPlaceholder(),
+        errorWidget: (context, url, error) => _buildError(),
+      );
+    }
+
+    return FutureBuilder<String>(
+      future: ImageCacheService().getImagePath(imageUrl),
+      builder: (context, snapshot) {
+        final cachedPath = snapshot.data;
+        if (snapshot.connectionState == ConnectionState.done &&
+            cachedPath != null &&
+            File(cachedPath).existsSync()) {
+          // Use cached local file
+          return Image.file(
+            File(cachedPath),
+            width: width,
+            height: height,
+            fit: fit,
+            errorBuilder: (context, error, stackTrace) => _buildError(),
+          );
+        }
+
+        // Not cached, load from network and cache
+        return CachedNetworkImage(
+          imageUrl: imageUrl,
+          width: width,
+          height: height,
+          fit: fit,
+          placeholder: (context, url) => _buildPlaceholder(),
+          errorWidget: (context, url, error) => _buildError(),
+          memCacheWidth: width?.toInt(),
+          memCacheHeight: height?.toInt(),
+          cacheManager: CustomCacheManager.instance,
+        );
+      },
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Container(
+      width: width,
+      height: height,
+      color: AppColors.lightGrey,
+      child: placeholder ??
+          Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(AppColors.primaryGold),
+              ),
+            ),
+          ),
+    );
+  }
+
+  Widget _buildError() {
+    return Container(
+      width: width,
+      height: height,
+      color: AppColors.lightGrey,
+      child: errorWidget ??
+          const Center(
+            child: Icon(
+              Icons.broken_image,
+              color: AppColors.secondaryAsh,
+              size: 30,
+            ),
+          ),
+    );
+  }
+}
+
+// Custom cache manager singleton
+class CustomCacheManager extends BaseCacheManager {
+  static const key = 'customCache';
+  static CustomCacheManager? _instance;
+
+  CustomCacheManager._internal()
+      : super(
+          Config(
+            key,
+            stalePeriod: const Duration(days: 30),
+            maxNrOfCacheObjects: 100,
+            fileFetcher: _customFileFetcher,
+          ),
+        );
+
+  factory CustomCacheManager() {
+    return _instance ??= CustomCacheManager._internal();
+  }
+
+  static CustomCacheManager get instance => _instance ??= CustomCacheManager._internal();
+
+  static Future<FileFetcherResponse> _customFileFetcher(String url,
+      {Map<String, String>? headers}) async {
+    try {
+      final response = await Dio()
+          .get(url, options: Options(responseType: ResponseType.bytes));
+      final bytes = response.data as List<int>;
+
+      // Save to custom local cache if needed
+      await ImageCacheService().cacheImage(url, bytes);
+
+      return FileFetcherResponse.fromBytes(bytes, response.statusCode ?? 200);
+    } catch (e) {
+      throw Exception('Failed to fetch image: $e');
+    }
+  }
+}

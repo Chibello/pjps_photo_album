@@ -1,0 +1,206 @@
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../models/student_model.dart';
+import '../models/year_level_model.dart';
+import '../services/album_service.dart';
+import '../services/api_service.dart';
+
+class AlbumState {
+  final bool isLoadingStudents;
+  final bool isLoadingDetails;
+  final bool isLoadingDashboard;
+
+  final List<YearLevelModel> yearLevels;
+  final List<StudentListModel> currentStudents;
+  final StudentDetailModel? currentStudent;
+
+  final Map<String, dynamic>? dashboardStats;
+  final String? error;
+
+  AlbumState({
+    this.isLoadingStudents = false,
+    this.isLoadingDetails = false,
+    this.isLoadingDashboard = false,
+    this.yearLevels = const [],
+    this.currentStudents = const [],
+    this.currentStudent,
+    this.dashboardStats,
+    this.error,
+  });
+
+  AlbumState copyWith({
+    bool? isLoadingStudents,
+    bool? isLoadingDetails,
+    bool? isLoadingDashboard,
+    List<YearLevelModel>? yearLevels,
+    List<StudentListModel>? currentStudents,
+    StudentDetailModel? currentStudent,
+    Map<String, dynamic>? dashboardStats,
+    String? error,
+  }) {
+    return AlbumState(
+      isLoadingStudents: isLoadingStudents ?? this.isLoadingStudents,
+      isLoadingDetails: isLoadingDetails ?? this.isLoadingDetails,
+      isLoadingDashboard: isLoadingDashboard ?? this.isLoadingDashboard,
+      yearLevels: yearLevels ?? this.yearLevels,
+      currentStudents: currentStudents ?? this.currentStudents,
+      currentStudent: currentStudent,
+      dashboardStats: dashboardStats ?? this.dashboardStats,
+      error: error ?? this.error,
+    );
+  }
+}
+
+class AlbumNotifier extends StateNotifier<AlbumState> {
+  final AlbumService _albumService;
+
+  AlbumNotifier(this._albumService) : super(AlbumState());
+
+  // ================================
+  // LOAD YEAR LEVELS
+  // ================================
+  Future<void> loadYearLevels() async {
+    state = state.copyWith(isLoadingStudents: true, error: null);
+    try {
+      final yearLevels = await _albumService.getYearLevels();
+      state = state.copyWith(
+        isLoadingStudents: false,
+        yearLevels: yearLevels,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingStudents: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ================================
+  // LOAD STUDENTS BY YEAR
+  // ================================
+  Future<void> loadStudentsByYear(String yearId) async {
+    state = state.copyWith(isLoadingStudents: true, error: null);
+    try {
+      final students = await _albumService.getStudentsByYear(yearId);
+      state = state.copyWith(
+        isLoadingStudents: false,
+        currentStudents: students,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingStudents: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ================================
+  // LOAD ALL STUDENTS
+  // ================================
+  Future<void> loadAllStudents() async {
+    state = state.copyWith(isLoadingStudents: true, error: null);
+    try {
+      final students = await _albumService.getAllStudents();
+      state = state.copyWith(
+        isLoadingStudents: false,
+        currentStudents: students,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingStudents: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ================================
+  // LOAD STUDENT DETAILS (FIXED 🔥)
+  // ================================
+  Future<void> loadStudentDetails(String studentId) async {
+    state = state.copyWith(
+      isLoadingDetails: true,
+      currentStudent: null, // ✅ clear old data
+      error: null,
+    );
+
+    try {
+      final student = await _albumService.getStudentDetails(studentId);
+
+      state = state.copyWith(
+        isLoadingDetails: false,
+        currentStudent: student,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingDetails: false,
+        currentStudent: null,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ================================
+  // LOAD DASHBOARD STATS
+  // ================================
+  Future<void> loadDashboardStats() async {
+    state = state.copyWith(isLoadingDashboard: true, error: null);
+    try {
+      final stats = await _albumService.getDashboardStats();
+      state = state.copyWith(
+        isLoadingDashboard: false,
+        dashboardStats: stats,
+      );
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingDashboard: false,
+        error: e.toString(),
+      );
+    }
+  }
+
+  // ================================
+  // SEARCH STUDENTS
+  // ================================
+  Future<List<StudentListModel>> searchStudents(String query) async {
+    try {
+      return await _albumService.searchStudents(query);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      return [];
+    }
+  }
+
+  // ================================
+  // DELETE STUDENT
+  // ================================
+  Future<bool> deleteStudent(String studentId) async {
+    state = state.copyWith(isLoadingStudents: true, error: null);
+    try {
+      await _albumService.deleteStudent(studentId);
+      await loadAllStudents();
+      state = state.copyWith(isLoadingStudents: false);
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isLoadingStudents: false,
+        error: e.toString(),
+      );
+      return false;
+    }
+  }
+
+  // ================================
+  // CLEAR ERROR
+  // ================================
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+}
+
+// ================================
+// PROVIDER
+// ================================
+final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+  final apiService = ApiService();
+  final albumService = AlbumService(apiService);
+  return AlbumNotifier(albumService);
+});

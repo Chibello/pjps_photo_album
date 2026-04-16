@@ -1,0 +1,82 @@
+// =================== SERVICES ===================
+
+// API Service
+final apiServiceProvider = Provider<ApiService>((ref) => ApiService());
+
+// Biometric Service
+final biometricServiceProvider = Provider<BiometricService>((ref) => BiometricService());
+
+// Database Helper
+final databaseHelperProvider = Provider<DatabaseHelper>((ref) => DatabaseHelper());
+
+// Connectivity Service
+final connectivityProvider =
+    StateNotifierProvider<ConnectivityNotifier, ConnectivityState>((ref) => ConnectivityNotifier());
+
+// Auth Service
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService(ref.read(apiServiceProvider), ref.read(biometricServiceProvider));
+});
+
+// Album Service
+final albumServiceProvider = Provider<AlbumService>((ref) => AlbumService(ref.read(apiServiceProvider)));
+
+// Staff Service
+final staffServiceProvider = Provider<StaffService>((ref) => StaffService(ref.read(apiServiceProvider)));
+
+// Remarks Service
+final remarksServiceProvider = Provider<RemarksService>((ref) => RemarksService(ref.read(apiServiceProvider)));
+
+// =================== REPOSITORIES ===================
+
+// Student Repository
+final studentRepositoryProvider = Provider<StudentRepository>((ref) {
+  return StudentRepository(
+    ref.read(apiServiceProvider),
+    ref.read(databaseHelperProvider),
+    ref.read(connectivityProvider.notifier),
+  );
+});
+
+// Staff Repository
+final staffRepositoryProvider = Provider<StaffRepository>((ref) {
+  return StaffRepository(ref.read(apiServiceProvider));
+});
+
+// =================== NOTIFIERS ===================
+
+// Auth Notifier
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+  return AuthNotifier(ref.read(authServiceProvider));
+});
+
+// Album Notifier
+final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+  return AlbumNotifier(
+    ref.read(albumServiceProvider),
+    ref.read(studentRepositoryProvider),
+  );
+});
+
+// Staff Notifier
+final staffProvider = StateNotifierProvider<StaffNotifier, StaffState>((ref) {
+  return StaffNotifier(ref.read(staffServiceProvider));
+});
+
+// Remarks Notifier
+final remarksProvider = StateNotifierProvider<RemarksNotifier, RemarksState>((ref) {
+  return RemarksNotifier(ref.read(remarksServiceProvider));
+});
+
+// Sync Notifier
+final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
+  return SyncNotifier();
+});
+
+// =================== OTHER ===================
+
+// Theme
+final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.light);
+
+// Router
+final appRouterProvider = Provider((ref) => appRouter);

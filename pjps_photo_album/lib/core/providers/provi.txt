@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../services/api_service.dart';
+import '../../services/auth_service.dart';
+import '../../services/biometric_service.dart'; // NEW
+import '../../services/album_service.dart';
+import '../../services/staff_service.dart';
+import '../../services/remarks_service.dart';
+import '../../services/connectivity_service.dart';
+//import '../../services/sync_service.dart';
+import '../../repositories/student_repository.dart';
+import '../../notifiers/auth_notifier.dart';
+import '../../notifiers/album_notifier.dart';
+import '../../notifiers/staff_notifier.dart';
+import '../../notifiers/remarks_notifier.dart';
+import '../../notifiers/sync_notifier.dart';
+import '../database/database_helper.dart';
+import '../routes/app_router.dart';
+
+//import '../../repositories/staff_repository.dart';
+
+// API Service Provider
+final apiServiceProvider = Provider<ApiService>((ref) {
+  return ApiService();
+});
+
+// Biometric Service Provider (NEW)
+final biometricServiceProvider = Provider<BiometricService>((ref) {
+  return BiometricService();
+});
+
+// Database Helper Provider
+final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
+  return DatabaseHelper();
+});
+
+// Connectivity Provider
+final connectivityProvider =
+    StateNotifierProvider<ConnectivityNotifier, ConnectivityState>((ref) {
+  return ConnectivityNotifier();
+});
+
+// Auth Providers (UPDATED)
+final authServiceProvider = Provider<AuthService>((ref) {
+  return AuthService(
+    ref.read(apiServiceProvider),
+    ref.read(biometricServiceProvider), // ADDED
+  );
+});
+
+final authProvider = StateNotifierProvider<AuthNotifier, AuthState>(
+  (ref) {
+    final authService = ref.read(authServiceProvider);
+    final biometricService = ref.read(biometricServiceProvider);
+    return AuthNotifier(authService, biometricService); // ✅ pass both
+  },
+);
+// ... rest of providers remain the same ...
+
+// API Service Provider
+//final apiServiceProvider = Provider<ApiService>((ref) {
+//  return ApiService();
+//});
+
+// Auth Providers
+//final authServiceProvider = Provider<AuthService>((ref) {
+//  return AuthService(ref.read(apiServiceProvider));
+//});
+
+//final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+//  return AuthNotifier(ref.read(authServiceProvider));
+//});
+
+// Album Providers
+//final albumServiceProvider = Provider<AlbumService>((ref) {
+//  return AlbumService(ref.read(apiServiceProvider));
+//});
+
+//final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+//  return AlbumNotifier(ref.read(albumServiceProvider));
+//});
+
+// Staff Providers
+//final staffServiceProvider = Provider<StaffService>((ref) {
+//  return StaffService(ref.read(apiServiceProvider));
+//});
+
+//final staffProvider = StateNotifierProvider<StaffNotifier, StaffState>((ref) {
+//  return StaffNotifier(ref.read(staffServiceProvider));
+//});
+
+// Remarks Providers
+final remarksServiceProvider = Provider<RemarksService>((ref) {
+  return RemarksService(ref.read(apiServiceProvider));
+});
+
+final remarksProvider =
+    StateNotifierProvider<RemarksNotifier, RemarksState>((ref) {
+  return RemarksNotifier(ref.read(remarksServiceProvider));
+});
+
+// Theme Provider
+final themeModeProvider = StateProvider<ThemeMode>((ref) {
+  return ThemeMode.light;
+});
+
+// Router Provider
+final appRouterProvider = Provider((ref) {
+  return appRouter;
+});
+
+//
+//
+
+// API Service Provider
+//final apiServiceProvider = Provider<ApiService>((ref) {
+//  return ApiService();
+//});
+
+// Database Helper Provider
+//final databaseHelperProvider = Provider<DatabaseHelper>((ref) {
+//  return DatabaseHelper();
+//});
+
+// Connectivity Provider
+//final connectivityProvider =
+//    StateNotifierProvider<ConnectivityNotifier, ConnectivityState>((ref) {
+//  return ConnectivityNotifier();
+//});
+
+// Auth Providers
+//final authServiceProvider = Provider<AuthService>((ref) {
+//  return AuthService(ref.read(apiServiceProvider));
+//});
+
+//final authProvider = StateNotifierProvider<AuthNotifier, AuthState>((ref) {
+//  return AuthNotifier(ref.read(authServiceProvider));
+//});
+
+
+
+// Repositories
+final studentRepositoryProvider = Provider<StudentRepository>((ref) {
+  return StudentRepository(
+    ref.read(apiServiceProvider),
+    ref.read(databaseHelperProvider),
+    ref.read(connectivityProvider.notifier),
+  );
+});
+
+// Album Providers
+final albumServiceProvider = Provider<AlbumService>((ref) {
+  return AlbumService(ref.read(apiServiceProvider));
+});
+
+final albumProvider = StateNotifierProvider<AlbumNotifier, AlbumState>((ref) {
+  return AlbumNotifier(
+    ref.read(albumServiceProvider),
+    ref.read(studentRepositoryProvider),
+  );
+});
+
+// Staff Providers
+final staffServiceProvider = Provider<StaffService>((ref) {
+  return StaffService(ref.read(apiServiceProvider));
+});
+
+final staffProvider = StateNotifierProvider<StaffNotifier, StaffState>((ref) {
+  return StaffNotifier(ref.read(staffServiceProvider));
+});
+
+// Remarks Providers
+//final remarksServiceProvider = Provider<RemarksService>((ref) {
+//  return RemarksService(ref.read(apiServiceProvider));
+//});
+
+//final remarksProvider =
+//    StateNotifierProvider<RemarksNotifier, RemarksState>((ref) {
+//  return RemarksNotifier(ref.read(remarksServiceProvider));
+//});
+
+// Sync Provider
+final syncProvider = StateNotifierProvider<SyncNotifier, SyncState>((ref) {
+  return SyncNotifier();
+});
+
+// Theme Provider
+//final themeModeProvider = StateProvider<ThemeMode>((ref) {
+//  return ThemeMode.light;
+//});
+
+// Router Provider
+//final appRouterProvider = Provider((ref) {
+//  return appRouter;
+//});

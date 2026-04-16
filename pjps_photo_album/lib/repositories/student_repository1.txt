@@ -1,0 +1,223 @@
+// lib/repositories/student_repository.dart
+import '../models/student_model.dart';
+import '../services/api_service.dart';
+import '../core/database/database_helper.dart';
+import '../services/connectivity_service.dart';
+import 'package:sqflite/sqflite.dart';
+
+class StudentRepository {
+  final ApiService apiService;
+  final DatabaseHelper dbHelper;
+  final ConnectivityNotifier connectivity;
+
+  StudentRepository({
+    required this.apiService,
+    required this.dbHelper,
+    required this.connectivity,
+  });
+
+  /// Fetch students in a class (offline-first)
+  Future<List<StudentListModel>> getStudentsInClass(String classId) async {
+    if (connectivity.state.isOnline) {
+      try {
+        final response =
+            await apiService.get('/albums/classes/$classId/students/');
+        final students = (response.data as List)
+            .map((json) =>
+                StudentListModel.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+
+        // Cache student details
+        for (var student in students) {
+          final detail = await getStudentDetails(student.id);
+          if (detail != null) await cacheStudentDetail(detail);
+        }
+
+        return students;
+      } catch (_) {
+        return getCachedStudentsInClass(classId);
+      }
+    } else {
+      return getCachedStudentsInClass(classId);
+    }
+  }
+
+  /// Fetch students in a year (offline-first)
+  Future<List<StudentListModel>> getStudentsInYear(String yearId) async {
+    if (connectivity.state.isOnline) {
+      try {
+        final response =
+            await apiService.get('/albums/year-levels/$yearId/students/');
+        final students = (response.data as List)
+            .map((json) =>
+                StudentListModel.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+
+        // Cache details
+        for (var student in students) {
+          final detail = await getStudentDetails(student.id);
+          if (detail != null) await cacheStudentDetail(detail);
+        }
+
+        return students;
+      } catch (_) {
+        return getCachedStudentsInYear(yearId);
+      }
+    } else {
+      return getCachedStudentsInYear(yearId);
+    }
+  }
+
+  /// Offline fallback for year
+  Future<List<StudentListModel>> getCachedStudentsInYear(String yearId) async {
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'students',
+      where: 'year_level = ?',
+      whereArgs: [yearId],
+    );
+
+    return result
+        .map((json) => StudentListModel(
+              id: json['id'] as String,
+              registrationNumber: json['registration_number'] as String,
+              fullName: json['full_name'] as String,
+              profilePhotoThumbnail: json['profile_photo_original'] as String?,
+              className: json['class_name'] as String?,
+              isActive: (json['is_active'] as int) == 1,
+            ))
+        .toList();
+  }
+
+  /// Get students from local database
+  Future<List<StudentListModel>> getCachedStudentsInClass(
+      String classId) async {
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'students',
+      where: 'current_class = ?',
+      whereArgs: [classId],
+    );
+
+    return result
+        .map((json) => StudentListModel(
+              id: json['id'] as String,
+              registrationNumber: json['registration_number'] as String,
+              fullName: json['full_name'] as String,
+              profilePhotoThumbnail: json['profile_photo_original'] as String?,
+              className: json['class_name'] as String?,
+              isActive: (json['is_active'] as int) == 1,
+            ))
+        .toList();
+  }
+
+  /// Get single student detail (nullable)
+  Future<StudentDetailModel?> getStudentDetails(String studentId) async {
+    if (connectivity.state.isOnline) {
+      try {
+        final response = await apiService.get('/albums/students/$studentId/');
+        if (response.data != null) {
+          final student = StudentDetailModel.fromJson(
+              Map<String, dynamic>.from(response.data));
+          await cacheStudentDetail(student);
+          return student;
+        }
+      } catch (_) {
+        // fallback to cache
+      }
+    }
+
+    return getCachedStudentDetail(studentId);
+  }
+
+  /// Cache a student detail locally
+  Future<void> cacheStudentDetail(StudentDetailModel student) async {
+    final db = await dbHelper.database;
+    await db.insert(
+      'students',
+      {
+        'id': student.id,
+        'registration_number': student.registrationNumber,
+        'full_name': student.fullName,
+        'first_name': student.firstName,
+        'last_name': student.lastName,
+        'other_names': student.otherNames,
+        'current_class': student.currentClass,
+        'class_name': student.classDetail?['name'],
+        'year_level': student.classDetail?['year_level'],
+        'profile_photo_original': student.profilePhotoOriginal,
+        'is_graduated': student.isGraduated ? 1 : 0,
+        'is_active': student.isActive ? 1 : 0,
+        'personal_notes': student.personalNotes,
+        'created_at': student.createdAt,
+        'updated_at': student.updatedAt,
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  /// Get single student detail from local cache
+  Future<StudentDetailModel?> getCachedStudentDetail(String studentId) async {
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'students',
+      where: 'id = ?',
+      whereArgs: [studentId],
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return StudentDetailModel.fromJson(result.first);
+    }
+    return null;
+  }
+
+  /// Search students (offline-first)
+  Future<List<StudentListModel>> searchStudents(String query) async {
+    if (connectivity.state.isOnline) {
+      try {
+        final response = await apiService.get(
+          '/albums/students/',
+          queryParameters: {'search': query},
+        );
+        final students = (response.data as List)
+            .map((json) =>
+                StudentListModel.fromJson(Map<String, dynamic>.from(json)))
+            .toList();
+
+        // Cache details
+        for (var student in students) {
+          final detail = await getStudentDetails(student.id);
+          if (detail != null) await cacheStudentDetail(detail);
+        }
+
+        return students;
+      } catch (_) {
+        return searchCachedStudents(query);
+      }
+    } else {
+      return searchCachedStudents(query);
+    }
+  }
+
+  /// Search cached students
+  Future<List<StudentListModel>> searchCachedStudents(String query) async {
+    final db = await dbHelper.database;
+    final result = await db.query(
+      'students',
+      where: 'full_name LIKE ? OR registration_number LIKE ?',
+      whereArgs: ['%$query%', '%$query%'],
+    );
+
+    return result
+        .map((json) => StudentListModel(
+              id: json['id'] as String,
+              registrationNumber: json['registration_number'] as String,
+              fullName: json['full_name'] as String,
+              profilePhotoThumbnail: json['profile_photo_original'] as String?,
+              className: json['class_name'] as String?,
+              isActive: (json['is_active'] as int) == 1,
+            ))
+        .toList();
+  }
+}

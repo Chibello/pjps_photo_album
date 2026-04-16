@@ -1,0 +1,189 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/providers/providers.dart';
+import '../../widgets/custom_text_field.dart';
+import '../../models/class_model.dart';
+//import '../../models/year_level_model.dart';
+
+class ManageClassesScreen extends ConsumerStatefulWidget {
+  const ManageClassesScreen({super.key});
+
+  @override
+  ConsumerState<ManageClassesScreen> createState() =>
+      _ManageClassesScreenState();
+}
+
+class _ManageClassesScreenState extends ConsumerState<ManageClassesScreen> {
+  List<ClassGroupModel> _classes = [];
+  bool _isLoading = false;
+  String? _selectedYearLevelId;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadYearLevelsAndClasses();
+  }
+
+  /// Load year levels and classes dynamically from provider
+  Future<void> _loadYearLevelsAndClasses() async {
+    setState(() => _isLoading = true);
+
+    try {
+      // Load year levels
+      await ref.read(albumProvider.notifier).loadYearLevels();
+      final yearLevels = ref.read(albumProvider).yearLevels;
+
+      if (yearLevels.isNotEmpty) {
+        _selectedYearLevelId ??= yearLevels.first.id;
+
+        // Load classes for selected year
+        await ref
+            .read(albumProvider.notifier)
+            .loadClassesForYear(_selectedYearLevelId!);
+
+        setState(() {
+          _classes = ref.read(albumProvider).currentClasses;
+        });
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to load classes: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showAddClassDialog() {
+    final nameController = TextEditingController();
+    String? yearLevelId = _selectedYearLevelId;
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Add New Class'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            CustomTextField(controller: nameController, label: 'Class Name'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: yearLevelId,
+              decoration: const InputDecoration(
+                labelText: 'Year Level',
+                border: OutlineInputBorder(),
+              ),
+              items: ref.read(albumProvider).yearLevels.map((year) {
+                return DropdownMenuItem(value: year.id, child: Text(year.name));
+              }).toList(),
+              onChanged: (value) => yearLevelId = value,
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: '2023/2024',
+              decoration: const InputDecoration(
+                labelText: 'Academic Year',
+                border: OutlineInputBorder(),
+              ),
+              items: const [
+                DropdownMenuItem(value: '2023/2024', child: Text('2023/2024')),
+                DropdownMenuItem(value: '2024/2025', child: Text('2024/2025')),
+              ],
+              onChanged: (value) {},
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () async {
+              if (nameController.text.isEmpty || yearLevelId == null) return;
+
+              Navigator.pop(context);
+
+              // Call provider to add class (replace with backend logic if needed)
+              await ref.read(albumProvider.notifier).addClass({
+                'name': nameController.text,
+                'yearLevelId': yearLevelId,
+              });
+
+              await _loadYearLevelsAndClasses();
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Class created successfully'),
+                  backgroundColor: AppColors.success,
+                ),
+              );
+            },
+            child: const Text('Create'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Manage Classes'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: _showAddClassDialog,
+          ),
+        ],
+      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : RefreshIndicator(
+              onRefresh: _loadYearLevelsAndClasses,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(16),
+                itemCount: _classes.length,
+                itemBuilder: (context, index) {
+                  final classItem = _classes[index];
+                  return Card(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    child: ListTile(
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primaryGold,
+                        child: Text(classItem.name[0],
+                            style: const TextStyle(color: Colors.white)),
+                      ),
+                      title: Text(classItem.name),
+                      subtitle: Text(
+                          '${classItem.yearLevelName} • ${classItem.studentCount} students'),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit,
+                                color: AppColors.primaryGold),
+                            onPressed: () {
+                              // TODO: edit class
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () {
+                              // TODO: delete class
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+    );
+  }
+}

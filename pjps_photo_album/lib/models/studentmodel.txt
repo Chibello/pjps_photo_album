@@ -1,0 +1,135 @@
+// lib/models/student_model.dart
+
+class StudentListModel {
+  final String id;
+  final String registrationNumber;
+  final String fullName;
+  final String? profilePhotoThumbnail;
+  final String? className;
+  final String? yearLevel; // unified field
+  final String? yearLevelName; // new
+  final bool isActive;
+
+  StudentListModel({
+    required this.id,
+    required this.registrationNumber,
+    required this.fullName,
+    this.profilePhotoThumbnail,
+    this.className,
+    this.yearLevel,
+    this.yearLevelName,
+    required this.isActive,
+  });
+
+  factory StudentListModel.fromJson(Map<String, dynamic> json) {
+    return StudentListModel(
+      id: json['id'] as String,
+      registrationNumber: json['registration_number'] as String,
+      fullName: json['full_name'] as String,
+      profilePhotoThumbnail: json['profile_photo_thumbnail'] as String?,
+      className: json['class_name'] as String?,
+      yearLevel: json['year_level'] as String?,
+      yearLevelName: json['year_level_name'] as String?,
+      isActive: (json['is_active'] is int)
+          ? (json['is_active'] as int) == 1
+          : (json['is_active'] as bool? ?? false),
+    );
+  }
+}
+
+class StudentDetailModel {
+  final String id;
+  final String registrationNumber;
+  final String firstName;
+  final String lastName;
+  final String? otherNames;
+  final String fullName;
+  final String? dateOfBirth;
+  final String? diocese;
+  final String? dioceseName;
+  final String hometown;
+  final String? stateOfOrigin;
+  final String? stateName;
+  final String? yearLevel;
+  final String? yearLevelName; // new
+  final String? currentClass;
+  final Map<String, dynamic>? classDetail;
+  final String enrollmentDate;
+  final String? profilePhotoSmall;
+  final String? profilePhotoMedium;
+  final String? profilePhotoOriginal;
+  final List<Map<String, dynamic>>? additionalPhotos;
+  final bool isGraduated;
+  final bool isActive;
+  final String? personalNotes;
+  final String createdAt;
+  final String updatedAt;
+
+  StudentDetailModel({
+    required this.id,
+    required this.registrationNumber,
+    required this.firstName,
+    required this.lastName,
+    this.otherNames,
+    required this.fullName,
+    this.dateOfBirth,
+    this.diocese,
+    this.dioceseName,
+    required this.hometown,
+    this.stateOfOrigin,
+    this.stateName,
+    this.yearLevel,
+    this.yearLevelName,
+    this.currentClass,
+    this.classDetail,
+    required this.enrollmentDate,
+    this.profilePhotoSmall,
+    this.profilePhotoMedium,
+    this.profilePhotoOriginal,
+    this.additionalPhotos,
+    required this.isGraduated,
+    required this.isActive,
+    this.personalNotes,
+    required this.createdAt,
+    required this.updatedAt,
+  });
+
+  factory StudentDetailModel.fromJson(Map<String, dynamic> json) {
+    return StudentDetailModel(
+      id: json['id'] as String,
+      registrationNumber: json['registration_number'] as String,
+      firstName: json['first_name'] as String,
+      lastName: json['last_name'] as String,
+      otherNames: json['other_names'] as String?,
+      fullName: json['full_name'] as String,
+      dateOfBirth: json['date_of_birth'] as String?,
+      diocese: json['diocese'] as String?,
+      dioceseName: json['diocese_name'] as String?,
+      hometown: json['hometown'] as String? ?? '',
+      stateOfOrigin: json['state_of_origin'] as String?,
+      stateName: json['state_name'] as String?,
+      currentClass: json['current_class'] as String?,
+      classDetail: json['class_detail'] != null
+          ? Map<String, dynamic>.from(json['class_detail'])
+          : null,
+      yearLevel: json['year_level'] as String?,
+      yearLevelName: json['year_level_name'] as String?,
+      enrollmentDate: json['enrollment_date'] as String,
+      profilePhotoSmall: json['profile_photo_small'] as String?,
+      profilePhotoMedium: json['profile_photo_medium'] as String?,
+      profilePhotoOriginal: json['profile_photo_original'] as String?,
+      additionalPhotos: json['additional_photos'] != null
+          ? List<Map<String, dynamic>>.from(json['additional_photos'])
+          : null,
+      isGraduated: (json['is_graduated'] is int)
+          ? (json['is_graduated'] as int) == 1
+          : (json['is_graduated'] as bool? ?? false),
+      isActive: (json['is_active'] is int)
+          ? (json['is_active'] as int) == 1
+          : (json['is_active'] as bool? ?? false),
+      personalNotes: json['personal_notes'] as String?,
+      createdAt: json['created_at'] as String,
+      updatedAt: json['updated_at'] as String,
+    );
+  }
+}

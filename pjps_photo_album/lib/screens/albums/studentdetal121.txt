@@ -1,0 +1,344 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_colors.dart';
+import '../../widgets/photo_gallery.dart';
+import '../../widgets/remark_section.dart';
+//import '../../widgets/remark_card.dart';
+import 'photo_view_screen.dart';
+import '../../models/student_model.dart';
+import '../../notifiers/album_notifier.dart';
+
+class StudentDetailScreen extends ConsumerStatefulWidget {
+  final String studentId;
+
+  const StudentDetailScreen({
+    super.key,
+    required this.studentId,
+  });
+
+  @override
+  ConsumerState<StudentDetailScreen> createState() =>
+      _StudentDetailScreenState();
+}
+
+class _StudentDetailScreenState extends ConsumerState<StudentDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Load student details when screen opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(albumProvider.notifier).loadStudentDetails(widget.studentId);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final albumState = ref.watch(albumProvider);
+    final student = albumState.currentStudent;
+
+    // Spinner while loading
+    if (albumState.isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    // Error state
+    if (albumState.error != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(albumState.error!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 16)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  ref
+                      .read(albumProvider.notifier)
+                      .loadStudentDetails(widget.studentId);
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // If student is null (not found)
+    if (student == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.person_off,
+                  size: 64, color: AppColors.secondaryAsh),
+              const SizedBox(height: 16),
+              const Text('Student not found', style: TextStyle(fontSize: 16)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () => context.pop(),
+                child: const Text('Go Back'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // Main student detail content
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(student.fullName),
+        backgroundColor: AppColors.primaryGold,
+        foregroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.edit),
+            onPressed: () {
+              context.push('/admin/students/${student.id}/edit');
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            onPressed: () {
+              _showDeleteConfirmationDialog(context, student);
+            },
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile section (always show once loaded)
+            _buildProfileSection(student),
+
+            // Info section
+            _buildInfoSection(student),
+
+            // Photo gallery (optional)
+            _buildPhotoGallery(student),
+
+            // Remarks section (even if empty)
+            _buildRemarksSection(student),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // PROFILE
+  Widget _buildProfileSection(StudentDetailModel student) {
+    return Container(
+      width: double.infinity,
+      color: AppColors.primaryGold.withOpacity(0.1),
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
+          CircleAvatar(
+            radius: 60,
+            backgroundImage: student.profilePhotoMedium != null
+                ? NetworkImage(student.profilePhotoMedium!)
+                : null,
+            child: student.profilePhotoMedium == null
+                ? const Icon(Icons.person,
+                    size: 60, color: AppColors.primaryGold)
+                : null,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            student.fullName,
+            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              color: student.isActive
+                  ? Colors.green.withOpacity(0.2)
+                  : Colors.red.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              student.isActive ? 'Active' : 'Inactive',
+              style: TextStyle(
+                color: student.isActive ? Colors.green : Colors.red,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+        ],
+      ),
+    );
+  }
+
+  // INFO
+  Widget _buildInfoSection(StudentDetailModel student) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Personal Information',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 16),
+          _buildInfoRow(
+              'Registration Number', student.registrationNumber, Icons.numbers),
+          _buildInfoRow(
+              'Year Level', student.yearLevel ?? 'Not assigned', Icons.school),
+          _buildInfoRow(
+              'Date of Birth',
+              student.dateOfBirth != null
+                  ? _formatDate(student.dateOfBirth!)
+                  : 'Not provided',
+              Icons.cake),
+          _buildInfoRow('Enrollment Date', _formatDate(student.enrollmentDate),
+              Icons.date_range),
+          _buildInfoRow('Hometown', student.hometown, Icons.location_city),
+          if (student.stateOfOrigin != null)
+            _buildInfoRow('State of Origin',
+                student.stateName ?? student.stateOfOrigin!, Icons.map),
+          if (student.diocese != null)
+            _buildInfoRow('Diocese', student.dioceseName ?? student.diocese!,
+                Icons.church),
+          if (student.personalNotes != null)
+            _buildInfoRow('Personal Notes', student.personalNotes!, Icons.notes,
+                multiline: true),
+        ],
+      ),
+    );
+  }
+
+  // PHOTO GALLERY
+  Widget _buildPhotoGallery(StudentDetailModel student) {
+    if (student.additionalPhotos == null || student.additionalPhotos!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Photo Gallery',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          PhotoGallery(
+            photos: student.additionalPhotos!,
+            onPhotoTap: (photoUrl) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                    builder: (_) => PhotoViewScreen(photoUrl: photoUrl)),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // REMARKS
+  Widget _buildRemarksSection(StudentDetailModel student) {
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: RemarkSection(contentType: 'student', objectId: student.id),
+    );
+  }
+
+  // INFO ROW HELPER
+  Widget _buildInfoRow(String label, String value, IconData icon,
+      {bool multiline = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment:
+            multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: AppColors.primaryGold.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: AppColors.primaryGold, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: const TextStyle(
+                        fontSize: 12, color: AppColors.secondaryAsh)),
+                const SizedBox(height: 4),
+                Text(value,
+                    style: TextStyle(
+                        fontSize: multiline ? 14 : 16,
+                        fontWeight: FontWeight.w500)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // DATE FORMAT HELPER
+  String _formatDate(String dateString) {
+    try {
+      final date = DateTime.parse(dateString);
+      return '${date.day}/${date.month}/${date.year}';
+    } catch (e) {
+      return dateString;
+    }
+  }
+
+  // DELETE CONFIRMATION
+  void _showDeleteConfirmationDialog(BuildContext context, dynamic student) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Delete Student'),
+          content: Text(
+              'Are you sure you want to delete ${student.fullName}? This action cannot be undone.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel')),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _deleteStudent(student.id);
+              },
+              style: TextButton.styleFrom(foregroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _deleteStudent(String studentId) async {
+    final success =
+        await ref.read(albumProvider.notifier).deleteStudent(studentId);
+    if (success)
+      context.pop();
+    else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to delete student')),
+      );
+    }
+  }
+}

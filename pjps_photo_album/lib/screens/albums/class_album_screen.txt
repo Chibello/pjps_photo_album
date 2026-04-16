@@ -1,0 +1,156 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../core/theme/app_colors.dart';
+import '../../core/providers/providers.dart';
+import '../../widgets/student_card.dart';
+import '../../widgets/remark_book_button.dart';
+import '../../models/year_level_model.dart';
+
+class YearStudentsScreen extends ConsumerStatefulWidget {
+  final String yearId;
+
+  const YearStudentsScreen({
+    super.key,
+    required this.yearId,
+  });
+
+  @override
+  ConsumerState<YearStudentsScreen> createState() => _YearStudentsScreenState();
+}
+
+class _YearStudentsScreenState extends ConsumerState<YearStudentsScreen> {
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadData();
+    });
+  }
+
+  Future<void> _loadData() async {
+    await ref.read(albumProvider.notifier).loadStudentsInYear(widget.yearId);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final albumState = ref.watch(albumProvider);
+
+    final students = albumState.currentStudents;
+    //final isLoading = albumState.isLoadingYears || albumState.isLoadingClasses;
+    final isLoading = albumState.isLoading;
+
+    // ✅ Get current year info
+    final currentYear = albumState.yearLevels.firstWhere(
+      (y) => y.id == widget.yearId,
+      orElse: () => YearLevelModel(
+        id: '',
+        name: 'Year',
+        displayOrder: 0,
+        isActive: true,
+        classCount: 0,
+        studentCount: 0,
+      ),
+    );
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(currentYear.name),
+        actions: [
+          RemarkBookButton(
+            contentType: 'yearlevel',
+            objectId: widget.yearId,
+          ),
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          slivers: [
+            // =========================
+            // Year Info Card
+            // =========================
+            SliverToBoxAdapter(
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  gradient: AppColors.goldAshGradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currentYear.name,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Total Students: ${students.length}',
+                      style: const TextStyle(color: Colors.white70),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // =========================
+            // Loading
+            // =========================
+            if (isLoading)
+              const SliverFillRemaining(
+                child: Center(
+                  child: CircularProgressIndicator(),
+                ),
+              )
+
+            // =========================
+            // Empty State
+            // =========================
+            else if (students.isEmpty)
+              const SliverFillRemaining(
+                child: Center(
+                  child: Text('No students in this year'),
+                ),
+              )
+
+            // =========================
+            // Students Grid
+            // =========================
+            else
+              SliverPadding(
+                padding: const EdgeInsets.all(16),
+                sliver: SliverGrid(
+                  delegate: SliverChildBuilderDelegate(
+                    (context, index) {
+                      final student = students[index];
+                      return StudentCard(
+                        student: student,
+                        onTap: () {
+                          context.push('/students/${student.id}');
+                        },
+                      );
+                    },
+                    childCount: students.length,
+                  ),
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 0.8,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}

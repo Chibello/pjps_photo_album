@@ -1,0 +1,35 @@
+// Add these routes
+GoRoute(
+  path: '/admin/students',
+  name: 'manageStudents',
+  builder: (context, state) => const ManageStudentsScreen(),
+),
+GoRoute(
+  path: '/admin/students/add',
+  name: 'addStudent',
+  builder: (context, state) => const AddEditStudentScreen(),
+),
+GoRoute(
+  path: '/admin/students/:studentId/edit',
+  name: 'editStudent',
+  builder: (context, state) => AddEditStudentScreen(
+    studentId: state.pathParameters['studentId'],
+  ),
+),
+GoRoute(
+  path: '/admin/staff',
+  name: 'manageStaff',
+  builder: (context, state) => const ManageStaffScreen(),
+),
+GoRoute(
+  path: '/admin/staff/add',
+  name: 'addStaff',
+  builder: (context, state) => const AddEditStaffScreen(),
+),
+GoRoute(
+  path: '/admin/staff/:staffId/edit',
+  name: 'editStaff',
+  builder: (context, state) => AddEditStaffScreen(
+    staffId: state.pathParameters['staffId'],
+  ),
+),
